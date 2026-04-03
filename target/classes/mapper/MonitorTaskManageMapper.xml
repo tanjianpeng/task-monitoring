@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ganzhou.monitoring.mapper.MonitorTaskManageMapper">
+
+    <select id="selectAll" resultType="MonitorTaskDef">
+        select task_code,
+               task_name,
+               system_code,
+               owner_name,
+               supervisor_name,
+               pre_requisite_prod,
+               the_batch_prod,
+               plan_start_time,
+               plan_end_time,
+               default_cost_minutes,
+               avg_cost_minutes,
+               delay_minutes,
+               frequency,
+               display_flag,
+               pos_x,
+               pos_y,
+               status,
+               remark,
+               created_time,
+               updated_time
+        from monitor_task
+        order by system_code asc, task_code asc
+    </select>
+
+    <select id="selectByCode" resultType="MonitorTaskDef">
+        select task_code,
+               task_name,
+               system_code,
+               owner_name,
+               supervisor_name,
+               pre_requisite_prod,
+               the_batch_prod,
+               plan_start_time,
+               plan_end_time,
+               default_cost_minutes,
+               avg_cost_minutes,
+               delay_minutes,
+               frequency,
+               display_flag,
+               pos_x,
+               pos_y,
+               status,
+               remark,
+               created_time,
+               updated_time
+        from monitor_task
+        where task_code = #{taskCode}
+        limit 1
+    </select>
+
+    <insert id="insert" parameterType="MonitorTaskDef">
+        insert into monitor_task (
+            task_code, task_name, system_code, owner_name, supervisor_name,
+            pre_requisite_prod, the_batch_prod, plan_start_time, plan_end_time,
+            default_cost_minutes, avg_cost_minutes, delay_minutes, frequency,
+            display_flag, pos_x, pos_y,
+            status, remark
+        ) values (
+            #{taskCode}, #{taskName}, #{systemCode}, #{ownerName}, #{supervisorName},
+            #{preRequisiteProd}, #{theBatchProd}, #{planStartTime}, #{planEndTime},
+            #{defaultCostMinutes}, #{avgCostMinutes}, #{delayMinutes}, #{frequency},
+            #{displayFlag}, #{posX}, #{posY},
+            #{status}, #{remark}
+        )
+    </insert>
+
+    <update id="updateByCode" parameterType="MonitorTaskDef">
+        update monitor_task
+        set task_name = #{taskName},
+            system_code = #{systemCode},
+            owner_name = #{ownerName},
+            supervisor_name = #{supervisorName},
+            pre_requisite_prod = #{preRequisiteProd},
+            the_batch_prod = #{theBatchProd},
+            plan_start_time = #{planStartTime},
+            plan_end_time = #{planEndTime},
+            default_cost_minutes = #{defaultCostMinutes},
+            avg_cost_minutes = #{avgCostMinutes},
+            delay_minutes = #{delayMinutes},
+            frequency = #{frequency},
+            display_flag = #{displayFlag},
+            pos_x = #{posX},
+            pos_y = #{posY},
+            status = #{status},
+            remark = #{remark},
+            updated_time = now()
+        where task_code = #{taskCode}
+    </update>
+
+    <delete id="deleteByCode">
+        delete from monitor_task
+        where task_code = #{taskCode}
+    </delete>
+
+    <select id="countBySystemCode" resultType="int">
+        select count(1)
+        from monitor_task
+        where system_code = #{systemCode}
+    </select>
+</mapper>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ganzhou.monitoring.mapper.MonitorTaskDefMapper">
+
+    <!--
+        根据任务编码查询任务定义。
+        这里只查询启用状态的任务，避免无效任务继续参与实例创建。
+    -->
+    <select id="selectByTaskCode" resultType="MonitorTaskDef">
+        select task_code,
+               task_name,
+               system_code,
+               owner_name,
+               supervisor_name,
+               pre_requisite_prod,
+               the_batch_prod,
+               plan_start_time,
+               plan_end_time,
+               default_cost_minutes,
+               avg_cost_minutes,
+               delay_minutes,
+               frequency,
+               display_flag,
+               pos_x,
+               pos_y,
+               status,
+               remark,
+               created_time,
+               updated_time
+        from monitor_task
+        where task_code = #{taskCode}
+          and status = '1'
+        limit 1
+    </select>
+</mapper>

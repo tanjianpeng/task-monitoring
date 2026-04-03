@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ganzhou.monitoring.mapper.MonitorDashboardMapper">
+
+    <!-- 查询顶部统计卡片。 -->
+    <select id="selectSummary" resultType="com.ganzhou.monitoring.dto.SummaryVO">
+        select count(distinct t.system_code) as system_count,
+               count(1) as task_count,
+               sum(case when x.status = 'PENDING' then 1 else 0 end) as pending_count,
+               sum(case when x.status = 'RUNNING' then 1 else 0 end) as running_count,
+               sum(case when x.status = 'SUCCESS' then 1 else 0 end) as success_count,
+               sum(case when x.status = 'FAILED' then 1 else 0 end) as failed_count,
+               sum(case when x.status = 'DELAYED' then 1 else 0 end) as delayed_count,
+               sum(case when x.status = 'TIMEOUT' then 1 else 0 end) as timeout_count
+        from (
+                 select i.task_code,
+                        case
+                            when i.actual_end_time is not null and i.result_status = 'SUCCESS' then 'SUCCESS'
+                            when i.actual_end_time is not null and i.result_status = 'FAILED' then 'FAILED'
+                            when i.actual_start_time is not null and i.actual_end_time is null and now() > i.predict_end_time then 'TIMEOUT'
+                            when i.actual_start_time is not null and i.actual_end_time is null then 'RUNNING'
+                            when i.actual_start_time is null and now() > i.plan_start_time then 'DELAYED'
+                            else 'PENDING'
+                            end as status
+                 from monitor_task_instance i
+                 where i.biz_date = #{bizDate}
+             ) x
+                 left join monitor_task t on x.task_code = t.task_code
+    </select>
+
+    <!-- 查询任务卡片及其布局信息。 -->
+    <select id="selectTaskCards" resultType="com.ganzhou.monitoring.dto.TaskCardVO">
+        select i.task_code,
+               t.task_name,
+               i.system_code,
+               s.system_name,
+               t.owner_name,
+               t.supervisor_name,
+               case
+                   when i.actual_end_time is not null and i.result_status = 'SUCCESS' then 'SUCCESS'
+                   when i.actual_end_time is not null and i.result_status = 'FAILED' then 'FAILED'
+                   when i.actual_start_time is not null and i.actual_end_time is null and now() > i.predict_end_time then 'TIMEOUT'
+                   when i.actual_start_time is not null and i.actual_end_time is null then 'RUNNING'
+                   when i.actual_start_time is null and now() > i.plan_start_time then 'DELAYED'
+                   else 'PENDING'
+                   end as status,
+               i.plan_start_time,
+               i.latest_start_time,
+               i.plan_end_time,
+               i.actual_start_time,
+               i.actual_end_time,
+               i.current_cost_minutes as current_cost_seconds,
+               t.avg_cost_minutes as avg_cost_seconds,
+               i.predict_end_time
+        from monitor_task_instance i
+                 left join monitor_system s on i.system_code = s.system_code
+                 left join monitor_task t on i.task_code = t.task_code
+        where i.biz_date = #{bizDate}
+          and (#{pageCode} is null or t.display_flag = '1')
+        order by i.plan_start_time asc, i.task_code asc
+    </select>
+
+    <!-- 查询单个任务的卡片详情。 -->
+    <select id="selectTaskCard" resultType="com.ganzhou.monitoring.dto.TaskCardVO">
+        select i.task_code,
+               t.task_name,
+               i.system_code,
+               s.system_name,
+               t.owner_name,
+               t.supervisor_name,
+               case
+                   when i.actual_end_time is not null and i.result_status = 'SUCCESS' then 'SUCCESS'
+                   when i.actual_end_time is not null and i.result_status = 'FAILED' then 'FAILED'
+                   when i.actual_start_time is not null and i.actual_end_time is null and now() > i.predict_end_time then 'TIMEOUT'
+                   when i.actual_start_time is not null and i.actual_end_time is null then 'RUNNING'
+                   when i.actual_start_time is null and now() > i.plan_start_time then 'DELAYED'
+                   else 'PENDING'
+                   end as status,
+               i.plan_start_time,
+               i.latest_start_time,
+               i.plan_end_time,
+               i.actual_start_time,
+               i.actual_end_time,
+               i.current_cost_minutes as current_cost_seconds,
+               t.avg_cost_minutes as avg_cost_seconds,
+               i.predict_end_time
+        from monitor_task_instance i
+                 left join monitor_system s on i.system_code = s.system_code
+                 left join monitor_task t on i.task_code = t.task_code
+        where i.biz_date = #{bizDate}
+          and i.task_code = #{taskCode}
+        limit 1
+    </select>
+
+    <!-- 查询任务依赖关系，用于前端绘制拓扑连线。 -->
+    <select id="selectLinks" resultType="com.ganzhou.monitoring.dto.LinkVO">
+        select pre_task_code as from_task_code,
+               task_code as to_task_code,
+               direction as dependency_type,
+               '1' as strong_dependency_flag,
+               '' as output_desc
+        from monitor_task_dependency d
+        order by pre_task_code asc, task_code asc
+    </select>
+</mapper>

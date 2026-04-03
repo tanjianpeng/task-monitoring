@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ganzhou.monitoring.mapper.MonitorTaskEventMapper">
+
+    <!-- 任务调用日志插入。每次业务系统调用都直接记录。 -->
+    <insert id="insert" parameterType="MonitorTaskEvent">
+        insert into monitor_task_log (
+            id, request_id, request_url, action_type, system_code, task_code,
+            biz_date, run_times, request_json, result_status, error_msg, created_time
+        ) values (
+            #{id}, #{requestId}, #{requestUrl}, #{actionType}, #{systemCode}, #{taskCode},
+            #{bizDate}, #{runTimes}, #{requestJson}, #{resultStatus}, #{errorMsg}, now()
+        )
+    </insert>
+
+    <!-- 查询任务详情弹窗所需的调用日志。 -->
+    <select id="selectByBizDateAndTaskCode" resultType="com.ganzhou.monitoring.dto.TaskEventVO">
+        select request_id,
+               action_type as event_type,
+               created_time as event_time,
+               result_status,
+               '' as error_code,
+               error_msg as error_message
+        from monitor_task_log
+        where biz_date = #{bizDate}
+          and task_code = #{taskCode}
+        order by created_time desc, id desc
+    </select>
+</mapper>

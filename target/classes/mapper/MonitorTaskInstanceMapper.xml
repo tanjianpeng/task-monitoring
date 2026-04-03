@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ganzhou.monitoring.mapper.MonitorTaskInstanceMapper">
+
+    <!-- 查询指定业务日期、任务编码、运行批次下的实例快照。 -->
+    <select id="selectByBizDateAndTaskCodeAndRunNo" resultType="MonitorTaskInstance">
+        select *
+        from monitor_task_instance
+        where biz_date = #{bizDate}
+          and task_code = #{taskCode}
+          and run_times = #{runNo}
+        limit 1
+    </select>
+
+    <!-- 新增任务实例。通常用于实例预生成或兜底补建。 -->
+    <insert id="insert" parameterType="MonitorTaskInstance">
+        insert into monitor_task_instance (
+            id, biz_date, run_times, task_code, system_code,
+            plan_start_time, latest_start_time, plan_end_time, actual_start_time,
+            actual_end_time, current_cost_minutes, predict_end_time,
+            delayed_flag, timeout_flag, result_status, is_flag, error_msg,
+            created_time, updated_time
+        ) values (
+            #{id}, #{bizDate}, #{runTimes}, #{taskCode}, #{systemCode},
+            #{planStartTime}, #{latestStartTime}, #{planEndTime}, #{actualStartTime},
+            #{actualEndTime}, #{currentCostMinutes}, #{predictEndTime},
+            #{delayedFlag}, #{timeoutFlag}, #{resultStatus}, #{isFlag}, #{errorMsg},
+            now(), now()
+        )
+    </insert>
+
+    <!-- 更新任务实例当前状态和运行信息。 -->
+    <update id="updateById" parameterType="MonitorTaskInstance">
+        update monitor_task_instance
+        set actual_start_time = #{actualStartTime},
+            actual_end_time = #{actualEndTime},
+            current_cost_minutes = #{currentCostMinutes},
+            predict_end_time = #{predictEndTime},
+            delayed_flag = #{delayedFlag},
+            timeout_flag = #{timeoutFlag},
+            result_status = #{resultStatus},
+            is_flag = #{isFlag},
+            error_msg = #{errorMsg},
+            updated_time = now()
+        where id = #{id}
+    </update>
+</mapper>

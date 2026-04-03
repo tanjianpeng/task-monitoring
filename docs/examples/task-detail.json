@@ -1,0 +1,41 @@
+{
+  "code": "0000",
+  "message": "success",
+  "data": {
+    "instance": {
+      "taskCode": "ACPL_BAT_01",
+      "taskName": "核算平台日终批处理任务",
+      "systemCode": "ACPL",
+      "systemName": "核算平台",
+      "ownerName": "王臣",
+      "supervisorName": "谢卫华",
+      "status": "FAILED",
+      "planStartTime": "2026-03-30 21:30:00",
+      "latestStartTime": "2026-03-30 21:40:00",
+      "planEndTime": "2026-03-30 22:05:00",
+      "actualStartTime": "2026-03-30 21:31:20",
+      "actualEndTime": "2026-03-30 21:49:58",
+      "currentCostSeconds": 1118,
+      "avgCostSeconds": 2100,
+      "predictEndTime": "2026-03-30 22:06:20"
+    },
+    "events": [
+      {
+        "requestId": "REQ202603300004",
+        "eventType": "FAIL",
+        "eventTime": "2026-03-30 21:49:58",
+        "resultStatus": "FAILED",
+        "errorCode": "ACPL-5001",
+        "errorMessage": "手动生成凭证失败"
+      },
+      {
+        "requestId": "REQ202603300003",
+        "eventType": "START",
+        "eventTime": "2026-03-30 21:31:20",
+        "resultStatus": "RUNNING",
+        "errorCode": null,
+        "errorMessage": null
+      }
+    ]
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "requestId": "REQ202604010002",
+  "systemCode": "ACPL",
+  "taskCode": "ACPL_BAT_01",
+  "bizDate": "2026-04-01",
+  "runNo": 0,
+  "endTime": "2026-04-01 21:49:58",
+  "resultStatus": "FAILED",
+  "errorMessage": "手动生成凭证失败",
+  "operator": "acpl-batch-node-01",
+  "remark": "任务结束",
+  "sgin": "4eb2b0f33a64f9c6d34386f7c07c42ca89e8d25b6f3bd84f02f5e91e0dc11fa4"
+}

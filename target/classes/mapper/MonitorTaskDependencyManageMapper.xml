@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ganzhou.monitoring.mapper.MonitorTaskDependencyManageMapper">
+
+    <select id="selectByTaskCode" resultType="MonitorTaskDependency">
+        select id,
+               pre_task_code,
+               task_code,
+               direction,
+               created_time,
+               updated_time
+        from monitor_task_dependency
+        where task_code = #{taskCode}
+        order by pre_task_code asc
+    </select>
+
+    <delete id="deleteByTaskCode">
+        delete from monitor_task_dependency
+        where task_code = #{taskCode}
+    </delete>
+
+    <insert id="batchInsert">
+        insert into monitor_task_dependency (
+            id, pre_task_code, task_code, direction
+        ) values
+        <foreach collection="list" item="item" separator=",">
+            (
+            #{item.id}, #{item.preTaskCode}, #{item.taskCode}, #{item.direction}
+            )
+        </foreach>
+    </insert>
+</mapper>

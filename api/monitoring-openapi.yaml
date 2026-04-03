@@ -1,0 +1,322 @@
+openapi: 3.0.3
+info:
+  title: Batch Monitoring API
+  version: 1.0.0
+  description: 通用跑批监控上报与大屏查询接口
+
+servers:
+  - url: /api
+
+paths:
+  /monitor/task/{params}:
+    post:
+      summary: 业务系统统一上报任务动作
+      parameters:
+        - in: path
+          name: params
+          required: true
+          schema:
+            type: string
+            enum: [begin, end]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskReportRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  /monitor/dashboard/summary:
+    get:
+      summary: 查询大屏汇总信息
+      parameters:
+        - in: query
+          name: bizDate
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SummaryResponse'
+
+  /monitor/dashboard/tasks:
+    get:
+      summary: 查询大屏任务卡片列表
+      parameters:
+        - in: query
+          name: bizDate
+          required: true
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: pageCode
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskCardListResponse'
+
+  /monitor/dashboard/links:
+    get:
+      summary: 查询任务依赖连线
+      parameters:
+        - in: query
+          name: pageCode
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LinkListResponse'
+
+  /monitor/task/detail:
+    get:
+      summary: 查询任务详情和事件流水
+      parameters:
+        - in: query
+          name: bizDate
+          required: true
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: taskCode
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskDetailResponse'
+
+components:
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          example: '0000'
+        message:
+          type: string
+          example: success
+        data:
+          type: object
+          nullable: true
+
+    TaskReportRequest:
+      type: object
+      required:
+        - requestId
+        - systemCode
+        - taskCode
+        - bizDate
+      properties:
+        requestId:
+          type: string
+          example: 202603300001
+        systemCode:
+          type: string
+          example: ACPL
+        taskCode:
+          type: string
+          example: ACPL_BAT_01
+        bizDate:
+          type: string
+          format: date
+        runNo:
+          type: integer
+          default: 1
+        startTime:
+          type: string
+          format: date-time
+          nullable: true
+        endTime:
+          type: string
+          format: date-time
+          nullable: true
+        resultStatus:
+          type: string
+          enum: [SUCCESS, FAILED]
+          nullable: true
+        costSeconds:
+          type: integer
+          nullable: true
+        errorCode:
+          type: string
+          nullable: true
+        errorMessage:
+          type: string
+          nullable: true
+        operator:
+          type: string
+          nullable: true
+        remark:
+          type: string
+          nullable: true
+        ext:
+          type: object
+          additionalProperties: true
+
+    SummaryResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            systemCount:
+              type: integer
+            taskCount:
+              type: integer
+            pendingCount:
+              type: integer
+            runningCount:
+              type: integer
+            successCount:
+              type: integer
+            failedCount:
+              type: integer
+            delayedCount:
+              type: integer
+            timeoutCount:
+              type: integer
+
+    TaskCardListResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskCard'
+
+    TaskCard:
+      type: object
+      properties:
+        taskCode:
+          type: string
+        taskName:
+          type: string
+        systemCode:
+          type: string
+        systemName:
+          type: string
+        ownerName:
+          type: string
+        supervisorName:
+          type: string
+        status:
+          type: string
+        planStartTime:
+          type: string
+          format: date-time
+        latestStartTime:
+          type: string
+          format: date-time
+        actualStartTime:
+          type: string
+          format: date-time
+          nullable: true
+        actualEndTime:
+          type: string
+          format: date-time
+          nullable: true
+        currentCostSeconds:
+          type: integer
+        avgCostSeconds:
+          type: integer
+        predictEndTime:
+          type: string
+          format: date-time
+          nullable: true
+
+    LinkListResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/LinkItem'
+
+    LinkItem:
+      type: object
+      properties:
+        fromTaskCode:
+          type: string
+        toTaskCode:
+          type: string
+        dependencyType:
+          type: string
+        strongDependencyFlag:
+          type: string
+        outputDesc:
+          type: string
+
+    TaskDetailResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          type: object
+          properties:
+            instance:
+              $ref: '#/components/schemas/TaskCard'
+            events:
+              type: array
+              items:
+                $ref: '#/components/schemas/TaskEvent'
+
+    TaskEvent:
+      type: object
+      properties:
+        requestId:
+          type: string
+        eventType:
+          type: string
+        eventTime:
+          type: string
+          format: date-time
+        resultStatus:
+          type: string
+        errorCode:
+          type: string
+        errorMessage:
+          type: string
