@@ -3,14 +3,13 @@ server:
 
 spring:
   application:
-    name: batch-monitoring
+    name: task-monitoring
   datasource:
     url: jdbc:mysql://127.0.0.1:3306/batch_monitoring?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
     username: root
     password: root
     driver-class-name: com.mysql.cj.jdbc.Driver
   jackson:
-    time-zone: Asia/Shanghai
     date-format: yyyy-MM-dd HH:mm:ss
 
 mybatis:
@@ -19,3 +18,8 @@ mybatis:
   configuration:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+monitor:
+  scheduler:
+    db-lock-enabled: true
+    db-lock-timeout-seconds: 0

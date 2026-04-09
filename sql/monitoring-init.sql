@@ -1,107 +1,82 @@
 -- =========================================================
--- 跑批监控平台初始化示例数据
+-- 任务监控平台初始化示例数据
 -- 说明：
 -- 1. 先执行 monitoring-ddl.sql
 -- 2. 再执行本文件
--- 3. 示例业务日期使用 2026-03-30
+-- 3. 示例业务日期使用 20260407
 -- =========================================================
 
-delete from monitor_task_event;
-delete from monitor_task_stat_daily;
+delete from monitor_task_log;
 delete from monitor_task_instance;
 delete from monitor_task_dependency;
-delete from monitor_task_def;
+delete from monitor_task;
 delete from monitor_system;
 
 insert into monitor_system
-(system_code, system_name, owner_name, supervisor_name, system_type, status, remark)
+(system_code, system_name, owner_name, supervisor_name, is_flag, remark)
 values
-    ('ACPL', '核算平台', '王臣', '谢卫华', 'CORE', '1', '核心核算相关任务'),
-    ('BDPS', '大数据平台', '刘崇皇', '吴鹏飞', 'DATA', '1', '负责装数和抽数'),
-    ('NWLS', '新网贷系统', '温强', '何锋', 'LOAN', '1', '依赖核算平台卸数'),
-    ('RICP', '老网贷系统', '张毅', '何锋', 'LOAN', '1', '包含核算与平台批处理'),
-    ('WEDS', '小微信贷管理系统', '赵永刚', '陈榕', 'LOAN', '1', '小微信贷日终'),
-    ('HOST', '核心', '王臣', '刘日旭', 'CORE', '1', '核心日常批处理'),
-    ('WARE', '中间业务平台', '黄海明', '曾星', 'MIDDLE', '1', '受托支付等中间业务');
+    ('ACPL', '核算平台', '王臣', '谢卫华', '0', '核心核算相关任务'),
+    ('BDPS', '大数据平台', '刘崇皇', '吴鹏飞', '0', '负责装数和抽数'),
+    ('NWLS', '新网贷系统', '温强', '何锋', '0', '依赖核算平台卸数'),
+    ('RICP', '老网贷系统', '张毅', '何锋', '0', '包含核算与平台批处理'),
+    ('WEDS', '小微信贷管理系统', '赵永刚', '陈榕', '0', '小微信贷日终'),
+    ('HOST', '核心', '王臣', '刘日旭', '0', '核心日常批处理'),
+    ('WARE', '中间业务平台', '黄海明', '曾星', '0', '受托支付等中间业务');
 
-insert into monitor_task_def
-(task_code, task_name, system_code, owner_name, supervisor_name, plan_start_time, plan_end_time,
- default_cost_seconds, delay_tolerance_minutes, month_end_flag, auto_create_instance_flag, display_flag,
- page_code, group_code, status, remark)
+insert into monitor_task
+(task_code, task_name, system_code, owner_name, supervisor_name, pre_requisite_prod, the_batch_prod,
+ plan_start_time, plan_end_time, default_cost_minutes,
+ pos_x, pos_y, is_flag, remark)
 values
-    ('ACPL_BAT_01', '核算平台日终批处理任务', 'ACPL', '王臣', '谢卫华', '21:30:00', '22:05:00', 2100, 10, '0', '1', '1', 'SYSTEM_STATUS', 'CENTER', '1', '核算主批任务'),
-    ('ACPL_BAT_02', '核算平台卸数任务', 'ACPL', '王臣', '谢卫华', '22:05:00', '22:25:00', 1200, 10, '0', '1', '1', 'SYSTEM_STATUS', 'RIGHT', '1', '核算卸数供其他系统使用'),
-    ('BDPS_BAT_01', '大数据平台装数任务', 'BDPS', '刘崇皇', '吴鹏飞', '20:00:00', '20:30:00', 1800, 10, '0', '1', '1', 'SYSTEM_STATUS', 'RIGHT', '1', '大数据装数'),
-    ('NWLS_BAT_01', '新网贷系统卸数任务', 'NWLS', '温强', '何锋', '21:30:00', '22:50:00', 4800, 10, '0', '1', '1', 'SYSTEM_STATUS', 'CENTER', '1', '依赖核算平台卸数'),
-    ('RICP_BAT_01', '老网贷核算日常批处理任务', 'RICP', '张毅', '何锋', '20:00:00', '20:10:00', 600, 10, '0', '1', '1', 'SYSTEM_STATUS', 'LEFT', '1', '老网贷核算'),
-    ('WEDS_BAT_01', '小微贷日终', 'WEDS', '赵永刚', '陈榕', '20:00:00', '23:00:00', 10800, 10, '0', '1', '1', 'SYSTEM_STATUS', 'RIGHT', '1', '小微信贷日终'),
-    ('HOST_BAT_03', '核心日常批处理任务', 'HOST', '王臣', '刘日旭', '21:00:00', '21:20:00', 1200, 10, '0', '1', '1', 'SYSTEM_STATUS', 'LEFT', '1', '核心日常任务'),
-    ('WARE_BAT_01', '中间业务平台受托支付对账', 'WARE', '黄海明', '曾星', '21:00:00', '21:30:00', 1800, 10, '0', '1', '1', 'SYSTEM_STATUS', 'LEFT', '1', '受托支付对账');
+    ('RICP_BAT_01', '老网贷核算日常批处理任务', 'RICP', '张毅', '何锋', '', '老网贷核算结果',
+     '2026-04-07 20:00:00', '2026-04-07 20:10:00', 10, 100, 80, '0', '老网贷核算任务'),
+    ('ACPL_BAT_01', '核算平台日终批处理任务', 'ACPL', '王臣', '谢卫华', '老网贷核算结果', '核算平台结果文件',
+     '2026-04-07 21:30:00', '2026-04-07 22:05:00', 35, 300, 80, '0', '核心主任务'),
+    ('NWLS_BAT_01', '新网贷系统卸数任务', 'NWLS', '温强', '何锋', '核算平台结果文件', '新网贷卸数结果',
+     '2026-04-07 21:30:00', '2026-04-07 22:50:00', 80, 500, 80, '0', '新网贷卸数任务'),
+    ('WEDS_BAT_01', '小微贷日终', 'WEDS', '赵永刚', '陈榕', '', '小微贷日终数据',
+     '2026-04-07 20:00:00', '2026-04-07 23:00:00', 180, 700, 80, '0', '小微贷日终任务'),
+    ('WARE_BAT_01', '中间业务平台受托支付对账', 'WARE', '黄海明', '曾星', '核算平台结果文件', '受托支付对账结果',
+     '2026-04-07 21:00:00', '2026-04-07 21:30:00', 30, 900, 80, '0', '受托支付对账'),
+    ('HOST_BAT_03', '核心日常批处理任务', 'HOST', '王臣', '刘日旭', '受托支付对账结果', '核心批处理结果',
+     '2026-04-07 21:00:00', '2026-04-07 21:20:00', 20, 1100, 80, '0', '核心日常任务');
 
 insert into monitor_task_dependency
-(id, task_code, pre_system_code, pre_task_code, pre_task_name, dependency_type, strong_dependency_flag, dependency_desc, output_desc)
+(id, pre_task_code, task_code, direction)
 values
-    (1, 'ACPL_BAT_01', 'BDPS', 'BDPS_BAT_01', '大数据平台装数任务', 'TASK', '0', '装数完成后可提供更多数据支撑', '模型数据'),
-    (2, 'ACPL_BAT_02', 'ACPL', 'ACPL_BAT_01', '核算平台日终批处理任务', 'TASK', '1', '核算日终完成后才可卸数', '核算平台卸数文件'),
-    (3, 'NWLS_BAT_01', 'ACPL', 'ACPL_BAT_02', '核算平台卸数任务', 'FILE', '1', '轮询核算平台卸数结果', '核算日终卸数文件8个'),
-    (4, 'WARE_BAT_01', 'ACPL', 'ACPL_BAT_02', '核算平台卸数任务', 'TASK', '1', '依赖核算批后卸数', '受托支付明细'),
-    (5, 'HOST_BAT_03', 'WARE', 'WARE_BAT_01', '中间业务平台受托支付对账', 'TASK', '0', '对账结果可辅助核心批处理', '受托支付对账结果');
+    ('DEP001', 'RICP_BAT_01', 'ACPL_BAT_01', 'RIGHT'),
+    ('DEP002', 'ACPL_BAT_01', 'NWLS_BAT_01', 'RIGHT'),
+    ('DEP003', 'ACPL_BAT_01', 'WARE_BAT_01', 'BOTTOM'),
+    ('DEP004', 'WARE_BAT_01', 'HOST_BAT_03', 'RIGHT');
 
 insert into monitor_task_instance
-(id, biz_date, run_no, task_code, task_name, system_code, current_status, plan_start_time, latest_start_time,
- plan_end_time, actual_start_time, actual_end_time, current_cost_seconds, avg_cost_seconds, predict_end_time,
- delayed_flag, timeout_flag, result_status, error_code, error_message, source_system_code, last_report_time, ext_json)
+(id, biz_date, run_times, task_code, system_code, plan_start_time, latest_start_time, plan_end_time,
+ actual_start_time, actual_end_time, current_cost_minutes, predict_end_time, delayed_flag, timeout_flag,
+ result_status, is_flag, created_time, updated_time)
 values
-    (1, '2026-03-30', 1, 'RICP_BAT_01', '老网贷核算日常批处理任务', 'RICP', 'SUCCESS', '2026-03-30 20:00:00', '2026-03-30 20:10:00',
-     '2026-03-30 20:10:00', '2026-03-30 20:00:03', '2026-03-30 20:08:30', 507, 600, '2026-03-30 20:10:03',
-     '0', '0', 'SUCCESS', null, null, 'RICP', '2026-03-30 20:08:30', '{"source":"batch"}'),
-    (2, '2026-03-30', 1, 'ACPL_BAT_01', '核算平台日终批处理任务', 'ACPL', 'FAILED', '2026-03-30 21:30:00', '2026-03-30 21:40:00',
-     '2026-03-30 22:05:00', '2026-03-30 21:31:20', '2026-03-30 21:49:58', 1118, 2100, '2026-03-30 22:06:20',
-     '0', '0', 'FAILED', 'ACPL-5001', '手动生成凭证失败', 'ACPL', '2026-03-30 21:49:58', '{"node":"acpl-node-01"}'),
-    (3, '2026-03-30', 1, 'BDPS_BAT_01', '大数据平台装数任务', 'BDPS', 'SUCCESS', '2026-03-30 20:00:00', '2026-03-30 20:10:00',
-     '2026-03-30 20:30:00', '2026-03-30 20:00:00', '2026-03-30 20:27:18', 1638, 1800, '2026-03-30 20:30:00',
-     '0', '0', 'SUCCESS', null, null, 'BDPS', '2026-03-30 20:27:18', '{"source":"etl"}'),
-    (4, '2026-03-30', 1, 'NWLS_BAT_01', '新网贷系统卸数任务', 'NWLS', 'RUNNING', '2026-03-30 21:30:00', '2026-03-30 21:40:00',
-     '2026-03-30 22:50:00', '2026-03-30 21:36:00', null, 3260, 4800, '2026-03-30 22:56:00',
-     '0', '0', 'RUNNING', null, null, 'NWLS', '2026-03-30 22:30:20', '{"progress":68}'),
-    (5, '2026-03-30', 1, 'ACPL_BAT_02', '核算平台卸数任务', 'ACPL', 'PENDING', '2026-03-30 22:05:00', '2026-03-30 22:15:00',
-     '2026-03-30 22:25:00', null, null, 0, 1200, '2026-03-30 22:25:00',
-     '0', '0', null, null, null, null, null, null),
-    (6, '2026-03-30', 1, 'WARE_BAT_01', '中间业务平台受托支付对账', 'WARE', 'SUCCESS', '2026-03-30 21:00:00', '2026-03-30 21:10:00',
-     '2026-03-30 21:30:00', '2026-03-30 21:00:12', '2026-03-30 21:18:45', 1113, 1800, '2026-03-30 21:30:12',
-     '0', '0', 'SUCCESS', null, null, 'WARE', '2026-03-30 21:18:45', '{"source":"ware-job"}'),
-    (7, '2026-03-30', 1, 'HOST_BAT_03', '核心日常批处理任务', 'HOST', 'SUCCESS', '2026-03-30 21:00:00', '2026-03-30 21:10:00',
-     '2026-03-30 21:20:00', '2026-03-30 21:00:05', '2026-03-30 21:16:48', 1003, 1200, '2026-03-30 21:20:05',
-     '0', '0', 'SUCCESS', null, null, 'HOST', '2026-03-30 21:16:48', '{"mode":"manual"}'),
-    (8, '2026-03-30', 1, 'WEDS_BAT_01', '小微贷日终', 'WEDS', 'DELAYED', '2026-03-30 20:00:00', '2026-03-30 20:10:00',
-     '2026-03-30 23:00:00', null, null, 0, 10800, '2026-03-30 23:00:00',
-     '1', '0', null, null, null, null, '2026-03-30 22:30:00', '{"remark":"等待前置抽数"}');
+    ('INS001', '20260407', 0, 'RICP_BAT_01', 'RICP', '2026-04-07 20:00:00', '2026-04-07 20:10:00', '2026-04-07 20:10:00',
+     '2026-04-07 20:00:03', '2026-04-07 20:08:30', 9, '2026-04-07 20:10:03', 0, 0, 'SUCCESS', '0', now(), now()),
+    ('INS002', '20260407', 0, 'ACPL_BAT_01', 'ACPL', '2026-04-07 21:30:00', '2026-04-07 21:40:00', '2026-04-07 22:05:00',
+     '2026-04-07 21:31:20', '2026-04-07 21:49:58', 19, '2026-04-07 22:06:20', 0, 0, 'FAILED', '0', now(), now()),
+    ('INS003', '20260407', 0, 'NWLS_BAT_01', 'NWLS', '2026-04-07 21:30:00', '2026-04-07 21:40:00', '2026-04-07 22:50:00',
+     '2026-04-07 21:36:00', null, 54, '2026-04-07 22:56:00', 0, 0, 'RUNNING', '0', now(), now()),
+    ('INS004', '20260407', 0, 'WEDS_BAT_01', 'WEDS', '2026-04-07 20:00:00', '2026-04-07 20:10:00', '2026-04-07 23:00:00',
+     null, null, 0, '2026-04-07 23:00:00', 1, 0, 'DELAYED', '0', now(), now()),
+    ('INS005', '20260407', 0, 'WARE_BAT_01', 'WARE', '2026-04-07 21:00:00', '2026-04-07 21:10:00', '2026-04-07 21:30:00',
+     '2026-04-07 21:00:12', '2026-04-07 21:18:45', 19, '2026-04-07 21:30:12', 0, 0, 'SUCCESS', '0', now(), now()),
+    ('INS006', '20260407', 0, 'HOST_BAT_03', 'HOST', '2026-04-07 21:00:00', '2026-04-07 21:10:00', '2026-04-07 21:20:00',
+     null, null, 0, '2026-04-07 21:20:00', 0, 0, 'NOTSTART', '0', now(), now());
 
-insert into monitor_task_event
-(id, request_id, biz_date, run_no, task_code, system_code, event_type, event_time, start_time, end_time,
- result_status, cost_seconds, error_code, error_message, request_json, process_result, process_msg)
+insert into monitor_task_log
+(id, request_id, request_url, request_status, system_code, task_code, biz_date, run_times, request_json, result_status)
 values
-    (1, 'REQ202603300001', '2026-03-30', 1, 'RICP_BAT_01', 'RICP', 'START', '2026-03-30 20:00:03', '2026-03-30 20:00:03', null,
-     'RUNNING', null, null, null, '{"taskCode":"RICP_BAT_01","eventType":"START"}', 'SUCCESS', '处理成功'),
-    (2, 'REQ202603300002', '2026-03-30', 1, 'RICP_BAT_01', 'RICP', 'FINISH', '2026-03-30 20:08:30', '2026-03-30 20:00:03', '2026-03-30 20:08:30',
-     'SUCCESS', 507, null, null, '{"taskCode":"RICP_BAT_01","eventType":"FINISH"}', 'SUCCESS', '处理成功'),
-    (3, 'REQ202603300003', '2026-03-30', 1, 'ACPL_BAT_01', 'ACPL', 'START', '2026-03-30 21:31:20', '2026-03-30 21:31:20', null,
-     'RUNNING', null, null, null, '{"taskCode":"ACPL_BAT_01","eventType":"START"}', 'SUCCESS', '处理成功'),
-    (4, 'REQ202603300004', '2026-03-30', 1, 'ACPL_BAT_01', 'ACPL', 'FAIL', '2026-03-30 21:49:58', '2026-03-30 21:31:20', '2026-03-30 21:49:58',
-     'FAILED', 1118, 'ACPL-5001', '手动生成凭证失败', '{"taskCode":"ACPL_BAT_01","eventType":"FAIL"}', 'SUCCESS', '处理成功'),
-    (5, 'REQ202603300005', '2026-03-30', 1, 'NWLS_BAT_01', 'NWLS', 'START', '2026-03-30 21:36:00', '2026-03-30 21:36:00', null,
-     'RUNNING', null, null, null, '{"taskCode":"NWLS_BAT_01","eventType":"START"}', 'SUCCESS', '处理成功'),
-    (6, 'REQ202603300006', '2026-03-30', 1, 'NWLS_BAT_01', 'NWLS', 'HEARTBEAT', '2026-03-30 22:30:20', '2026-03-30 21:36:00', null,
-     'RUNNING', 3260, null, null, '{"taskCode":"NWLS_BAT_01","eventType":"HEARTBEAT","progress":68}', 'SUCCESS', '处理成功');
-
-insert into monitor_task_stat_daily
-(id, biz_date, task_code, system_code, run_no, success_flag, delayed_flag, timeout_flag, month_end_flag, cost_seconds)
-values
-    (1, '2026-03-29', 'RICP_BAT_01', 'RICP', 1, '1', '0', '0', '0', 530),
-    (2, '2026-03-29', 'ACPL_BAT_01', 'ACPL', 1, '1', '0', '0', '0', 2050),
-    (3, '2026-03-29', 'BDPS_BAT_01', 'BDPS', 1, '1', '0', '0', '0', 1780),
-    (4, '2026-03-29', 'NWLS_BAT_01', 'NWLS', 1, '1', '0', '0', '0', 4720),
-    (5, '2026-03-30', 'RICP_BAT_01', 'RICP', 1, '1', '0', '0', '0', 507),
-    (6, '2026-03-30', 'ACPL_BAT_01', 'ACPL', 1, '0', '0', '0', '0', 1118),
-    (7, '2026-03-30', 'BDPS_BAT_01', 'BDPS', 1, '1', '0', '0', '0', 1638),
-    (8, '2026-03-30', 'WEDS_BAT_01', 'WEDS', 1, '0', '1', '0', '0', 0);
+    ('LOG001', 'REQ202604070001', '/api/monitor/task/report', 'start', 'RICP', 'RICP_BAT_01', '20260407', 0,
+     '{"systemCode":"RICP","taskCode":"RICP_BAT_01","bizDate":"2026-04-07","status":"start"}', 'RUNNING'),
+    ('LOG002', 'REQ202604070002', '/api/monitor/task/report', 'stop', 'RICP', 'RICP_BAT_01', '20260407', 0,
+     '{"systemCode":"RICP","taskCode":"RICP_BAT_01","bizDate":"2026-04-07","status":"stop"}', 'SUCCESS'),
+    ('LOG003', 'REQ202604070003', '/api/monitor/task/report', 'start', 'ACPL', 'ACPL_BAT_01', '20260407', 0,
+     '{"systemCode":"ACPL","taskCode":"ACPL_BAT_01","bizDate":"2026-04-07","status":"start"}', 'RUNNING'),
+    ('LOG004', 'REQ202604070004', '/api/monitor/task/report', 'fail', 'ACPL', 'ACPL_BAT_01', '20260407', 0,
+     '{"systemCode":"ACPL","taskCode":"ACPL_BAT_01","bizDate":"2026-04-07","status":"fail"}', 'FAILED'),
+    ('LOG005', 'REQ202604070005', '/api/monitor/task/report', 'start', 'NWLS', 'NWLS_BAT_01', '20260407', 0,
+     '{"systemCode":"NWLS","taskCode":"NWLS_BAT_01","bizDate":"2026-04-07","status":"start"}', 'RUNNING');

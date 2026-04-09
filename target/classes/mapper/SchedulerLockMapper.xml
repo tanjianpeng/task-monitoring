@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ganzhou.monitoring.mapper.SchedulerLockMapper">
+
+    <!--
+        获取 MySQL 命名锁。
+        用途：多机部署时保证同一个业务日期的定时任务只执行一次。
+        入参：
+        1. lockName：锁名称，通常按“任务名+业务日期”拼接。
+        2. timeoutSeconds：获取锁等待秒数，0 表示立即返回。
+    -->
+    <select id="acquireLock" resultType="java.lang.Integer">
+        select get_lock(#{lockName}, #{timeoutSeconds})
+    </select>
+
+    <!--
+        释放 MySQL 命名锁。
+        用途：定时任务执行完毕后主动释放锁资源。
+        入参：
+        1. lockName：锁名称，必须和获取锁时保持一致。
+    -->
+    <select id="releaseLock" resultType="java.lang.Integer">
+        select release_lock(#{lockName})
+    </select>
+</mapper>

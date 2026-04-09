@@ -4,7 +4,14 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ganzhou.monitoring.mapper.MonitorTaskInstanceMapper">
 
-    <!-- 查询指定业务日期、任务编码、运行批次下的实例快照。 -->
+    <!--
+        查询指定业务日期、任务编码、运行批次下的任务实例。
+        用途：外部上报时定位实例、定时初始化时判断实例是否已存在。
+        入参：
+        1. bizDate：业务日期，格式 yyyyMMdd。
+        2. taskCode：任务编码。
+        3. runNo：运行批次，表示第几次执行或重跑。
+    -->
     <select id="selectByBizDateAndTaskCodeAndRunNo" resultType="MonitorTaskInstance">
         select *
         from monitor_task_instance
@@ -14,36 +21,118 @@
         limit 1
     </select>
 
-    <!-- 新增任务实例。通常用于实例预生成或兜底补建。 -->
+    <!--
+        新增任务实例。
+        用途：每天 0 点预生成实例，或业务系统先上报时兜底补建实例。
+        入参：
+        1. instance：任务实例对象，包含计划时间、实际时间、状态、耗时等字段。
+    -->
     <insert id="insert" parameterType="MonitorTaskInstance">
         insert into monitor_task_instance (
             id, biz_date, run_times, task_code, system_code,
             plan_start_time, latest_start_time, plan_end_time, actual_start_time,
-            actual_end_time, current_cost_minutes, predict_end_time,
-            delayed_flag, timeout_flag, result_status, is_flag, error_msg,
+            actual_end_time, current_cost_minutes, avg_cost_minutes, frequency, predict_end_time,
+            delayed_flag, timeout_flag, result_status, is_flag,
             created_time, updated_time
         ) values (
             #{id}, #{bizDate}, #{runTimes}, #{taskCode}, #{systemCode},
             #{planStartTime}, #{latestStartTime}, #{planEndTime}, #{actualStartTime},
-            #{actualEndTime}, #{currentCostMinutes}, #{predictEndTime},
-            #{delayedFlag}, #{timeoutFlag}, #{resultStatus}, #{isFlag}, #{errorMsg},
+            #{actualEndTime}, #{currentCostMinutes}, #{avgCostMinutes}, #{frequency}, #{predictEndTime},
+            #{delayedFlag}, #{timeoutFlag}, #{resultStatus}, #{isFlag},
             now(), now()
         )
     </insert>
 
-    <!-- 更新任务实例当前状态和运行信息。 -->
+    <!--
+        按主键更新任务实例运行信息。
+        用途：业务系统每次 start/stop/restart/fail 上报后，刷新实例当前状态、时间和耗时。
+        入参：
+        1. id：实例主键，表示更新哪条记录。
+        2. 其余字段：实例最新状态和运行信息。
+    -->
     <update id="updateById" parameterType="MonitorTaskInstance">
         update monitor_task_instance
         set actual_start_time = #{actualStartTime},
             actual_end_time = #{actualEndTime},
             current_cost_minutes = #{currentCostMinutes},
+            avg_cost_minutes = #{avgCostMinutes},
+            frequency = #{frequency},
             predict_end_time = #{predictEndTime},
             delayed_flag = #{delayedFlag},
             timeout_flag = #{timeoutFlag},
             result_status = #{resultStatus},
             is_flag = #{isFlag},
-            error_msg = #{errorMsg},
             updated_time = now()
         where id = #{id}
     </update>
+
+    <!--
+        按主键刷新实例计划信息。
+        用途：每日定时初始化时，如果实例尚未开始执行，则同步任务定义上的计划时间和预计结束时间。
+        入参：
+        1. id：实例主键。
+        2. systemCode、planStartTime、latestStartTime、planEndTime、predictEndTime 等：最新计划值。
+    -->
+    <update id="updatePlanFieldsById" parameterType="MonitorTaskInstance">
+        update monitor_task_instance
+        set system_code = #{systemCode},
+            plan_start_time = #{planStartTime},
+            latest_start_time = #{latestStartTime},
+            plan_end_time = #{planEndTime},
+            avg_cost_minutes = #{avgCostMinutes},
+            frequency = #{frequency},
+            predict_end_time = #{predictEndTime},
+            delayed_flag = #{delayedFlag},
+            timeout_flag = #{timeoutFlag},
+            is_flag = #{isFlag},
+            updated_time = now()
+        where id = #{id}
+    </update>
+
+    <!--
+        查询指定业务日期下任务的最大重跑次数。
+        用途：restart 时自动生成新的 runTimes。
+        入参：
+        1. bizDate：业务日期，格式 yyyyMMdd。
+        2. taskCode：任务编码。
+    -->
+    <select id="selectMaxRunTimes" resultType="java.lang.Integer">
+        select max(run_times)
+        from monitor_task_instance
+        where biz_date = #{bizDate}
+          and task_code = #{taskCode}
+    </select>
+
+    <!--
+        查询实例表中最新一条业务日期。
+        用途：本地大屏查询优先使用该业务日期取数。
+    -->
+    <select id="selectLatestBizDate" resultType="java.lang.String">
+        select biz_date
+        from monitor_task_instance
+        order by biz_date desc, updated_time desc
+        limit 1
+    </select>
+
+    <!--
+        按指定业务日期列表统计任务成功平均耗时。
+        用途：平日视图统计近 30 个非月底业务日平均耗时，月底视图统计往前 6 个月底业务日平均耗时；
+        同时也用于 start/stop/fail 回调时计算预计结束时间。
+        入参：
+        1. taskCode：任务编码，表示统计哪个任务。
+        2. bizDateList：参与统计的业务日期列表，格式 yyyyMMdd。
+        说明：结果单位为分钟。
+    -->
+    <select id="selectHistoricalAvgCostMinutesByBizDateList" resultType="java.lang.Integer">
+        select cast(avg(current_cost_minutes) as signed)
+        from monitor_task_instance
+        where task_code = #{taskCode}
+          and biz_date in
+        <foreach collection="bizDateList" item="bizDate" open="(" separator="," close=")">
+            #{bizDate}
+        </foreach>
+          and result_status = 'SUCCESS'
+          and current_cost_minutes is not null
+          and current_cost_minutes > 0
+    </select>
 </mapper>

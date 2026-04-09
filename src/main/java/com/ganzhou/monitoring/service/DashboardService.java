@@ -1,31 +1,33 @@
 package com.ganzhou.monitoring.service;
 
-import com.ganzhou.monitoring.dto.LinkVO;
-import com.ganzhou.monitoring.dto.SummaryVO;
-import com.ganzhou.monitoring.dto.TaskCardVO;
-import com.ganzhou.monitoring.dto.TaskDetailVO;
-import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
+import com.ganzhou.monitoring.dto.SystemDashboardCardVO;
+import com.ganzhou.monitoring.dto.TaskStatusDataVO;
+
+/**
+ * Description: 大屏服务接口。
+ *
+ * @author tanjianpeng
+ * @time 2026-04-07 18:14:49
+ * @version 1.0
+ */
 public interface DashboardService {
 
     /**
-     * 查询汇总统计。
+     * 查询本地大屏顶部统计数据。
      */
-    SummaryVO getSummary(LocalDate bizDate);
+    Map<String, String> getStatistics();
 
     /**
-     * 查询大屏任务卡片列表。
+     * 查询本地大屏系统列表。
      */
-    List<TaskCardVO> getTaskCards(LocalDate bizDate, String pageCode);
+    List<SystemDashboardCardVO> getSystems(String systemName);
 
     /**
-     * 查询任务依赖连线。
+     * 查询本地大屏任务状态列表。
+     * 返回结果会按任务依赖关系做顺序整理，便于前端直接渲染链路。
      */
-    List<LinkVO> getLinks(String pageCode);
-
-    /**
-     * 查询任务详情。
-     */
-    TaskDetailVO getTaskDetail(LocalDate bizDate, String taskCode);
+    TaskStatusDataVO getTaskStatusList();
 }

@@ -75,13 +75,9 @@
   "planStartTime": "2026-03-31 21:30:00",
   "planEndTime": "2026-03-31 22:05:00",
   "defaultCostMinutes": 35,
-  "avgCostMinutes": 32,
-  "delayMinutes": 10,
-  "frequency": "D",
-  "displayFlag": "1",
   "posX": 530,
   "posY": 340,
-  "status": "1",
+  "isFlag": "0",
   "remark": "核算主批任务",
   "dependencies": [
     {

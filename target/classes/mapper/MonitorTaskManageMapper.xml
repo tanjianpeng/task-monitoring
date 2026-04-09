@@ -4,6 +4,10 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ganzhou.monitoring.mapper.MonitorTaskManageMapper">
 
+    <!--
+        查询全部任务主数据。
+        用途：任务管理列表页展示全部任务配置。
+    -->
     <select id="selectAll" resultType="MonitorTaskDef">
         select task_code,
                task_name,
@@ -16,12 +20,10 @@
                plan_end_time,
                default_cost_minutes,
                avg_cost_minutes,
-               delay_minutes,
                frequency,
-               display_flag,
                pos_x,
                pos_y,
-               status,
+               is_flag,
                remark,
                created_time,
                updated_time
@@ -29,6 +31,12 @@
         order by system_code asc, task_code asc
     </select>
 
+    <!--
+        按任务编码查询单个任务主数据。
+        用途：任务详情或编辑回显时加载任务定义。
+        入参：
+        1. taskCode：任务编码，表示查询哪条任务。
+    -->
     <select id="selectByCode" resultType="MonitorTaskDef">
         select task_code,
                task_name,
@@ -41,12 +49,10 @@
                plan_end_time,
                default_cost_minutes,
                avg_cost_minutes,
-               delay_minutes,
                frequency,
-               display_flag,
                pos_x,
                pos_y,
-               status,
+               is_flag,
                remark,
                created_time,
                updated_time
@@ -55,22 +61,39 @@
         limit 1
     </select>
 
+    <!--
+        新增任务主数据。
+        用途：保存一条新的任务定义。
+        入参：
+        1. taskCode：任务编码。
+        2. taskName：任务名称。
+        3. systemCode：所属系统编码。
+        4. planStartTime、planEndTime：计划时间。
+        5. 其余字段：负责人、备注、布局、频率等扩展属性。
+    -->
     <insert id="insert" parameterType="MonitorTaskDef">
         insert into monitor_task (
             task_code, task_name, system_code, owner_name, supervisor_name,
             pre_requisite_prod, the_batch_prod, plan_start_time, plan_end_time,
-            default_cost_minutes, avg_cost_minutes, delay_minutes, frequency,
-            display_flag, pos_x, pos_y,
-            status, remark
+            default_cost_minutes, avg_cost_minutes, frequency,
+            pos_x, pos_y,
+            is_flag, remark
         ) values (
             #{taskCode}, #{taskName}, #{systemCode}, #{ownerName}, #{supervisorName},
             #{preRequisiteProd}, #{theBatchProd}, #{planStartTime}, #{planEndTime},
-            #{defaultCostMinutes}, #{avgCostMinutes}, #{delayMinutes}, #{frequency},
-            #{displayFlag}, #{posX}, #{posY},
-            #{status}, #{remark}
+            #{defaultCostMinutes}, #{avgCostMinutes}, #{frequency},
+            #{posX}, #{posY},
+            #{isFlag}, #{remark}
         )
     </insert>
 
+    <!--
+        按任务编码更新任务主数据。
+        用途：修改已有任务定义。
+        入参：
+        1. taskCode：任务编码，表示更新哪条任务。
+        2. 其余字段：任务最新配置值。
+    -->
     <update id="updateByCode" parameterType="MonitorTaskDef">
         update monitor_task
         set task_name = #{taskName},
@@ -83,22 +106,32 @@
             plan_end_time = #{planEndTime},
             default_cost_minutes = #{defaultCostMinutes},
             avg_cost_minutes = #{avgCostMinutes},
-            delay_minutes = #{delayMinutes},
             frequency = #{frequency},
-            display_flag = #{displayFlag},
             pos_x = #{posX},
             pos_y = #{posY},
-            status = #{status},
+            is_flag = #{isFlag},
             remark = #{remark},
             updated_time = now()
         where task_code = #{taskCode}
     </update>
 
+    <!--
+        按任务编码删除任务主数据。
+        用途：删除不再使用的任务定义。
+        入参：
+        1. taskCode：任务编码。
+    -->
     <delete id="deleteByCode">
         delete from monitor_task
         where task_code = #{taskCode}
     </delete>
 
+    <!--
+        统计某个系统下的任务数量。
+        用途：删除系统前先校验该系统下是否还挂着任务。
+        入参：
+        1. systemCode：系统编码。
+    -->
     <select id="countBySystemCode" resultType="int">
         select count(1)
         from monitor_task

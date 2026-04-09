@@ -1,18 +1,23 @@
 package com.ganzhou.monitoring.service.impl;
 
+import java.util.List;
+
 import com.ganzhou.monitoring.common.BusinessException;
 import com.ganzhou.monitoring.dto.SystemSaveRequest;
 import com.ganzhou.monitoring.entity.MonitorSystem;
 import com.ganzhou.monitoring.mapper.MonitorSystemManageMapper;
 import com.ganzhou.monitoring.mapper.MonitorTaskManageMapper;
 import com.ganzhou.monitoring.service.SystemManageService;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 系统主数据管理服务实现。
+ * Description: 系统主数据管理服务实现。
+ *
+ * @author tanjianpeng
+ * @time 2026-04-07 18:14:49
+ * @version 1.0
  */
 @Service
 @RequiredArgsConstructor
@@ -65,7 +70,7 @@ public class SystemManageServiceImpl implements SystemManageService {
         entity.setSystemName(request.getSystemName());
         entity.setOwnerName(request.getOwnerName());
         entity.setSupervisorName(request.getSupervisorName());
-        entity.setStatus(request.getStatus() == null ? "1" : request.getStatus());
+        entity.setIsFlag(request.getIsFlag() == null ? "0" : request.getIsFlag());
         entity.setRemark(request.getRemark());
         return entity;
     }

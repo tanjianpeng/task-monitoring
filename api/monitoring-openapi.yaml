@@ -1,23 +1,20 @@
 openapi: 3.0.3
 info:
-  title: Batch Monitoring API
+  title: Task Monitoring API
   version: 1.0.0
-  description: 通用跑批监控上报与大屏查询接口
+  description: 跑批监控上报、本地大屏查询和主数据维护接口
 
 servers:
   - url: /api
 
 paths:
-  /monitor/task/{params}:
+  /monitor/task/report:
     post:
-      summary: 业务系统统一上报任务动作
-      parameters:
-        - in: path
-          name: params
-          required: true
-          schema:
-            type: string
-            enum: [begin, end]
+      summary: 外部系统统一上报任务状态
+      description: |
+        外部业务系统统一调用该接口上报任务状态。
+        `status` 仅支持 `start`、`stop`、`restart`、`fail` 四种取值。
+        其中 `stop` 表示任务成功结束，`fail` 表示任务失败结束。
       requestBody:
         required: true
         content:
@@ -30,15 +27,16 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ApiResponse'
+                $ref: '#/components/schemas/ResultDtoString'
 
-  /monitor/dashboard/summary:
-    get:
-      summary: 查询大屏汇总信息
+  /monitor/task/instances/init:
+    post:
+      summary: 手工触发某日任务实例初始化
       parameters:
         - in: query
           name: bizDate
           required: true
+          description: 需要初始化实例的业务日期
           schema:
             type: string
             format: date
@@ -48,21 +46,29 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SummaryResponse'
+                $ref: '#/components/schemas/ResultDtoInteger'
 
-  /monitor/dashboard/tasks:
+  /monitor/local/queryStatistics:
     get:
-      summary: 查询大屏任务卡片列表
+      summary: 查询本地大屏顶部统计数据
+      description: 业务日期优先取实例表最新一条业务日期，实例表为空时回退到昨天日期
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultDtoStatisticsMap'
+
+  /monitor/local/querySystems:
+    get:
+      summary: 查询本地大屏系统信息卡片
+      description: 业务日期优先取实例表最新一条业务日期，实例表为空时回退到昨天日期
       parameters:
         - in: query
-          name: bizDate
-          required: true
-          schema:
-            type: string
-            format: date
-        - in: query
-          name: pageCode
+          name: systemName
           required: false
+          description: 系统名称，支持模糊查询
           schema:
             type: string
       responses:
@@ -71,36 +77,130 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TaskCardListResponse'
+                $ref: '#/components/schemas/ResultDtoSystemDashboardCardList'
 
-  /monitor/dashboard/links:
+  /monitor/local/queryTaskStatus:
     get:
-      summary: 查询任务依赖连线
-      parameters:
-        - in: query
-          name: pageCode
-          required: false
-          schema:
-            type: string
+      summary: 查询本地大屏任务状态
+      description: 返回已按依赖顺序整理的任务节点列表和依赖关系节点列表，业务日期优先取实例表最新一条业务日期，实例表为空时回退到昨天日期
       responses:
         '200':
           description: 成功
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LinkListResponse'
+                $ref: '#/components/schemas/ResultDtoTaskStatusDataVO'
 
-  /monitor/task/detail:
+  /manage/systems:
     get:
-      summary: 查询任务详情和事件流水
+      summary: 查询系统列表
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultDtoSystemList'
+    post:
+      summary: 新增系统
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SystemSaveRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultDtoVoid'
+
+  /manage/systems/{systemCode}:
+    get:
+      summary: 查询系统详情
       parameters:
-        - in: query
-          name: bizDate
+        - in: path
+          name: systemCode
           required: true
           schema:
             type: string
-            format: date
-        - in: query
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultDtoMonitorSystem'
+    put:
+      summary: 修改系统
+      parameters:
+        - in: path
+          name: systemCode
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SystemSaveRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultDtoVoid'
+    delete:
+      summary: 删除系统
+      parameters:
+        - in: path
+          name: systemCode
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultDtoVoid'
+
+  /manage/tasks:
+    get:
+      summary: 查询任务列表
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultDtoTaskList'
+    post:
+      summary: 新增任务及依赖关系
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskSaveRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultDtoVoid'
+
+  /manage/tasks/{taskCode}:
+    get:
+      summary: 查询任务详情及依赖关系
+      parameters:
+        - in: path
           name: taskCode
           required: true
           schema:
@@ -111,11 +211,84 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TaskDetailResponse'
+                $ref: '#/components/schemas/ResultDtoTaskManageDetailVO'
+    put:
+      summary: 修改任务及依赖关系
+      parameters:
+        - in: path
+          name: taskCode
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskSaveRequest'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultDtoVoid'
+    delete:
+      summary: 删除任务及其依赖关系
+      parameters:
+        - in: path
+          name: taskCode
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultDtoVoid'
 
 components:
   schemas:
-    ApiResponse:
+    ResultDtoVoid:
+      type: object
+      properties:
+        code:
+          type: string
+          example: '0000'
+        message:
+          type: string
+          example: success
+        data:
+          nullable: true
+
+    ResultDtoString:
+      type: object
+      properties:
+        code:
+          type: string
+          example: '0000'
+        message:
+          type: string
+          example: success
+        data:
+          type: string
+          description: 本次上报对应的运行批次号
+
+    ResultDtoInteger:
+      type: object
+      properties:
+        code:
+          type: string
+          example: '0000'
+        message:
+          type: string
+          example: success
+        data:
+          type: integer
+
+    ResultDtoStatisticsMap:
       type: object
       properties:
         code:
@@ -126,104 +299,194 @@ components:
           example: success
         data:
           type: object
-          nullable: true
+          additionalProperties:
+            type: string
+
+    ResultDtoTaskStatusDataVO:
+      type: object
+      properties:
+        code:
+          type: string
+          example: '0000'
+        message:
+          type: string
+          example: success
+        data:
+          $ref: '#/components/schemas/TaskStatusDataVO'
+
+    ResultDtoMonitorSystem:
+      type: object
+      properties:
+        code:
+          type: string
+          example: '0000'
+        message:
+          type: string
+          example: success
+        data:
+          $ref: '#/components/schemas/MonitorSystem'
+
+    ResultDtoSystemList:
+      type: object
+      properties:
+        code:
+          type: string
+          example: '0000'
+        message:
+          type: string
+          example: success
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/MonitorSystem'
+
+    ResultDtoSystemDashboardCardList:
+      type: object
+      properties:
+        code:
+          type: string
+          example: '0000'
+        message:
+          type: string
+          example: success
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SystemDashboardCardVO'
+
+    ResultDtoTaskList:
+      type: object
+      properties:
+        code:
+          type: string
+          example: '0000'
+        message:
+          type: string
+          example: success
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/MonitorTaskDef'
+
+    ResultDtoTaskManageDetailVO:
+      type: object
+      properties:
+        code:
+          type: string
+          example: '0000'
+        message:
+          type: string
+          example: success
+        data:
+          $ref: '#/components/schemas/TaskManageDetailVO'
+
+    SystemDashboardCardVO:
+      type: object
+      properties:
+        systemCode:
+          type: string
+          description: 系统编码
+        systemName:
+          type: string
+          description: 系统名称
+        ownerName:
+          type: string
+          description: 系统负责人
+        supervisorName:
+          type: string
+          description: 系统监督人
+        notStartCount:
+          type: integer
+          description: 待执行数量
+        runningCount:
+          type: integer
+          description: 执行中数量
+        successCount:
+          type: integer
+          description: 成功数量
+        failedCount:
+          type: integer
+          description: 失败数量
+        totalCount:
+          type: integer
+          description: 总数，等于待执行、执行中、成功、失败四种状态数量之和
 
     TaskReportRequest:
       type: object
       required:
-        - requestId
         - systemCode
         - taskCode
         - bizDate
+        - status
+        - requestTime
+        - sign
       properties:
         requestId:
           type: string
-          example: 202603300001
+          description: 请求流水号
         systemCode:
           type: string
-          example: ACPL
+          description: 系统编码
+          example: HISPROD
         taskCode:
           type: string
-          example: ACPL_BAT_01
+          description: 任务编码
+          example: HISPROD_BAT_01
         bizDate:
           type: string
           format: date
+          description: 业务日期，格式 yyyy-MM-dd
+          example: '2025-11-26'
         runNo:
           type: integer
-          default: 1
+          default: 0
+          description: 重跑次数，默认值为 0
+        status:
+          type: string
+          enum: [start, stop, restart, fail]
+          description: |
+            本次上报状态。
+            start 表示开始，stop 表示成功结束，restart 表示重跑开始，fail 表示失败结束。
         startTime:
           type: string
           format: date-time
           nullable: true
+          description: 任务开始时间
         endTime:
           type: string
           format: date-time
           nullable: true
-        resultStatus:
-          type: string
-          enum: [SUCCESS, FAILED]
-          nullable: true
+          description: 任务结束时间
         costSeconds:
           type: integer
           nullable: true
-        errorCode:
+          description: 耗时秒数，系统会换算成分钟后写入实例表 current_cost_minutes
+        requestTime:
           type: string
-          nullable: true
-        errorMessage:
+          format: date-time
+          description: 请求时间，格式 yyyy-MM-dd HH:mm:ss
+          example: '2026-04-01 11:54:23'
+        sign:
           type: string
-          nullable: true
-        operator:
-          type: string
-          nullable: true
-        remark:
-          type: string
-          nullable: true
-        ext:
-          type: object
-          additionalProperties: true
+          description: 请求签名
 
-    SummaryResponse:
+    StatisticItemVO:
       type: object
       properties:
-        code:
+        itemCode:
           type: string
-        message:
+        itemName:
           type: string
-        data:
-          type: object
-          properties:
-            systemCount:
-              type: integer
-            taskCount:
-              type: integer
-            pendingCount:
-              type: integer
-            runningCount:
-              type: integer
-            successCount:
-              type: integer
-            failedCount:
-              type: integer
-            delayedCount:
-              type: integer
-            timeoutCount:
-              type: integer
+        itemValue:
+          type: integer
 
-    TaskCardListResponse:
+    TaskDashboardItemVO:
       type: object
       properties:
-        code:
+        bizDate:
           type: string
-        message:
-          type: string
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/TaskCard'
-
-    TaskCard:
-      type: object
-      properties:
+        runTimes:
+          type: integer
         taskCode:
           type: string
         taskName:
@@ -236,7 +499,21 @@ components:
           type: string
         supervisorName:
           type: string
-        status:
+        preRequisiteProd:
+          type: string
+        theBatchProd:
+          type: string
+        posX:
+          type: integer
+        posY:
+          type: integer
+        defaultCostMinutes:
+          type: integer
+        frequency:
+          type: string
+        taskIsFlag:
+          type: string
+        remark:
           type: string
         planStartTime:
           type: string
@@ -244,79 +521,202 @@ components:
         latestStartTime:
           type: string
           format: date-time
-        actualStartTime:
+        planEndTime:
           type: string
           format: date-time
+        actualStartTime:
+          type: string
+          description: 实际开始时间，格式 HH:mm:ss
           nullable: true
         actualEndTime:
           type: string
-          format: date-time
+          description: 实际结束时间，格式 HH:mm:ss
           nullable: true
-        currentCostSeconds:
-          type: integer
-        avgCostSeconds:
-          type: integer
+        currentCostMinutes:
+          type: string
+          description: 当前耗时，格式 mm:ss
+          nullable: true
+        avgCostMinutes:
+          type: string
+          description: 历史平均耗时，格式 mm:ss；平日按往前 30 个非月底业务日统计，月底按往前 6 个自然月底业务日统计
         predictEndTime:
           type: string
           format: date-time
           nullable: true
-
-    LinkListResponse:
-      type: object
-      properties:
-        code:
-          type: string
-        message:
-          type: string
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/LinkItem'
-
-    LinkItem:
-      type: object
-      properties:
-        fromTaskCode:
-          type: string
-        toTaskCode:
-          type: string
-        dependencyType:
-          type: string
-        strongDependencyFlag:
-          type: string
-        outputDesc:
-          type: string
-
-    TaskDetailResponse:
-      type: object
-      properties:
-        code:
-          type: string
-        message:
-          type: string
-        data:
-          type: object
-          properties:
-            instance:
-              $ref: '#/components/schemas/TaskCard'
-            events:
-              type: array
-              items:
-                $ref: '#/components/schemas/TaskEvent'
-
-    TaskEvent:
-      type: object
-      properties:
-        requestId:
-          type: string
-        eventType:
-          type: string
-        eventTime:
-          type: string
-          format: date-time
+        delayedFlag:
+          type: integer
+        timeoutFlag:
+          type: integer
         resultStatus:
           type: string
-        errorCode:
+        resultStatusName:
           type: string
-        errorMessage:
+          description: 执行结果状态中文说明
+        isFlag:
           type: string
+    TaskStatusDataVO:
+      type: object
+      properties:
+        taskList:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskDashboardItemVO'
+        依赖关系节点list:
+          type: array
+          items:
+            $ref: '#/components/schemas/LinkVO'
+
+    LinkVO:
+      type: object
+      properties:
+        preTaskCode:
+          type: string
+        taskCode:
+          type: string
+        direction:
+          type: string
+          description: 箭头方向，取值为 TOP、BOTTOM、LEFT、RIGHT
+
+    TaskManageDetailVO:
+      type: object
+      properties:
+        task:
+          $ref: '#/components/schemas/MonitorTaskDef'
+        dependencies:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskDependencyItem'
+
+    TaskDependencyItem:
+      type: object
+      properties:
+        preTaskCode:
+          type: string
+        direction:
+          type: string
+          description: 箭头指向方向，取值为 TOP、BOTTOM、LEFT、RIGHT
+
+    SystemSaveRequest:
+      type: object
+      required:
+        - systemCode
+        - systemName
+      properties:
+        systemCode:
+          type: string
+        systemName:
+          type: string
+        ownerName:
+          type: string
+        supervisorName:
+          type: string
+        isFlag:
+          type: string
+        remark:
+          type: string
+
+    TaskSaveRequest:
+      type: object
+      required:
+        - taskCode
+        - taskName
+        - systemCode
+        - planStartTime
+        - planEndTime
+      properties:
+        taskCode:
+          type: string
+        taskName:
+          type: string
+        systemCode:
+          type: string
+        ownerName:
+          type: string
+        supervisorName:
+          type: string
+        preRequisiteProd:
+          type: string
+        theBatchProd:
+          type: string
+        planStartTime:
+          type: string
+          format: date-time
+        planEndTime:
+          type: string
+          format: date-time
+        defaultCostMinutes:
+          type: integer
+        posX:
+          type: integer
+        posY:
+          type: integer
+        isFlag:
+          type: string
+        remark:
+          type: string
+        dependencies:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskDependencyItem'
+
+    MonitorSystem:
+      type: object
+      properties:
+        systemCode:
+          type: string
+        systemName:
+          type: string
+        ownerName:
+          type: string
+        supervisorName:
+          type: string
+        isFlag:
+          type: string
+        remark:
+          type: string
+        createdTime:
+          type: string
+          format: date-time
+        updatedTime:
+          type: string
+          format: date-time
+
+    MonitorTaskDef:
+      type: object
+      properties:
+        taskCode:
+          type: string
+        taskName:
+          type: string
+        systemCode:
+          type: string
+        ownerName:
+          type: string
+        supervisorName:
+          type: string
+        preRequisiteProd:
+          type: string
+        theBatchProd:
+          type: string
+        planStartTime:
+          type: string
+          format: date-time
+        planEndTime:
+          type: string
+          format: date-time
+        defaultCostMinutes:
+          type: integer
+        posX:
+          type: integer
+        posY:
+          type: integer
+        isFlag:
+          type: string
+        remark:
+          type: string
+        createdTime:
+          type: string
+          format: date-time
+        updatedTime:
+          type: string
+          format: date-time

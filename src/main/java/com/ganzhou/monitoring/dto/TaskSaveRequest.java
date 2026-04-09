@@ -1,14 +1,19 @@
 package com.ganzhou.monitoring.dto;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.List;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 import lombok.Data;
 
 /**
- * 任务主数据保存请求。
- * 包含任务本身信息以及依赖关系列表。
+ * Description: 任务主数据保存请求。 包含任务本身信息以及依赖关系列表。
+ *
+ * @author tanjianpeng
+ * @time 2026-04-07 18:14:49
+ * @version 1.0
  */
 @Data
 public class TaskSaveRequest {
@@ -48,26 +53,14 @@ public class TaskSaveRequest {
     /** 默认耗时分钟数。 */
     private Integer defaultCostMinutes;
 
-    /** 历史平均耗时分钟数。 */
-    private Integer avgCostMinutes;
-
-    /** 延迟分钟数。 */
-    private Integer delayMinutes;
-
-    /** 频率。 */
-    private String frequency;
-
-    /** 是否展示。 */
-    private String displayFlag;
-
     /** 横坐标。 */
     private Integer posX;
 
     /** 纵坐标。 */
     private Integer posY;
 
-    /** 状态。 */
-    private String status;
+    /** 是否大屏展示，0是，1否。 */
+    private String isFlag;
 
     /** 备注。 */
     private String remark;

@@ -2,13 +2,11 @@
   "code": "0000",
   "message": "success",
   "data": {
-    "systemCount": 7,
-    "taskCount": 8,
-    "pendingCount": 1,
-    "runningCount": 1,
-    "successCount": 4,
-    "failedCount": 1,
-    "delayedCount": 1,
-    "timeoutCount": 0
+    "systemCount": "7",
+    "taskCount": "6",
+    "notStartCount": "1",
+    "runningCount": "1",
+    "successCount": "2",
+    "failedCount": "1"
   }
 }

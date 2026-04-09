@@ -4,6 +4,12 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ganzhou.monitoring.mapper.MonitorTaskDependencyManageMapper">
 
+    <!--
+        按任务编码查询依赖关系列表。
+        用途：任务详情页展示或编辑依赖关系时回显数据。
+        入参：
+        1. taskCode：当前任务编码，表示查看哪个任务依赖了哪些前置任务。
+    -->
     <select id="selectByTaskCode" resultType="MonitorTaskDependency">
         select id,
                pre_task_code,
@@ -16,11 +22,23 @@
         order by pre_task_code asc
     </select>
 
+    <!--
+        按任务编码删除依赖关系。
+        用途：任务编辑时先清掉旧依赖，再重建新依赖。
+        入参：
+        1. taskCode：当前任务编码。
+    -->
     <delete id="deleteByTaskCode">
         delete from monitor_task_dependency
         where task_code = #{taskCode}
     </delete>
 
+    <!--
+        批量新增依赖关系。
+        用途：任务保存时一次性写入多个前置任务关系。
+        入参：
+        1. list：依赖列表，每条记录包含前置任务编码、当前任务编码、箭头方向等字段。
+    -->
     <insert id="batchInsert">
         insert into monitor_task_dependency (
             id, pre_task_code, task_code, direction

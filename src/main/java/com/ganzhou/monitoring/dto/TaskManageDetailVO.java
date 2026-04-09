@@ -1,12 +1,16 @@
 package com.ganzhou.monitoring.dto;
 
-import com.ganzhou.monitoring.entity.MonitorTaskDef;
 import java.util.List;
+
+import com.ganzhou.monitoring.entity.MonitorTaskDef;
 import lombok.Data;
 
 /**
- * 任务管理详情返回对象。
- * 页面编辑任务时可一次性拿到任务主数据和依赖关系。
+ * Description: 任务管理详情返回对象。 页面编辑任务时可一次性拿到任务主数据和依赖关系。
+ *
+ * @author tanjianpeng
+ * @time 2026-04-07 18:14:49
+ * @version 1.0
  */
 @Data
 public class TaskManageDetailVO {

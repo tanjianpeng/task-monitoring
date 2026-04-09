@@ -4,8 +4,8 @@
   "taskCode": "ACPL_BAT_01",
   "bizDate": "2026-04-01",
   "runNo": 0,
+  "status": "start",
+  "requestTime": "2026-04-01 21:31:20",
   "startTime": "2026-04-01 21:31:20",
-  "operator": "acpl-batch-node-01",
-  "remark": "任务开始执行",
-  "sgin": "9d3a0c35f2d2a7ebf63cb357f1a19c1bdab5fb6ce9e244fb2527f1e7d8076c4b"
+  "sign": "9d3a0c35f2d2a7ebf63cb357f1a19c1bdab5fb6ce9e244fb2527f1e7d8076c4b"
 }

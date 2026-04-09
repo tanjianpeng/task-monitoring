@@ -6,7 +6,9 @@
 
     <!--
         根据任务编码查询任务定义。
-        这里只查询启用状态的任务，避免无效任务继续参与实例创建。
+        用途：外部上报、实例初始化时先校验任务是否存在。
+        入参：
+        1. taskCode：任务编码，表示查询哪条任务定义。
     -->
     <select id="selectByTaskCode" resultType="MonitorTaskDef">
         select task_code,
@@ -20,18 +22,42 @@
                plan_end_time,
                default_cost_minutes,
                avg_cost_minutes,
-               delay_minutes,
                frequency,
-               display_flag,
                pos_x,
                pos_y,
-               status,
+               is_flag,
                remark,
                created_time,
                updated_time
         from monitor_task
         where task_code = #{taskCode}
-          and status = '1'
         limit 1
+    </select>
+
+    <!--
+        查询全部任务定义。
+        用途：每天 0 点预生成任务实例时，先把全部任务加载出来。
+    -->
+    <select id="selectActiveTasks" resultType="MonitorTaskDef">
+        select task_code,
+               task_name,
+               system_code,
+               owner_name,
+               supervisor_name,
+               pre_requisite_prod,
+               the_batch_prod,
+               plan_start_time,
+               plan_end_time,
+               default_cost_minutes,
+               avg_cost_minutes,
+               frequency,
+               pos_x,
+               pos_y,
+               is_flag,
+               remark,
+               created_time,
+               updated_time
+        from monitor_task
+        order by system_code asc, task_code asc
     </select>
 </mapper>

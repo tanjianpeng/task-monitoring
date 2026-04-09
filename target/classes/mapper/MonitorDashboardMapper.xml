@@ -4,103 +4,169 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.ganzhou.monitoring.mapper.MonitorDashboardMapper">
 
-    <!-- 查询顶部统计卡片。 -->
+    <!--
+        查询本地大屏顶部统计数据。
+        用途：统计指定业务日期下系统总数、任务总数、待执行数、执行中数、成功数、失败数。
+        说明：顶部统计不单独展示延迟状态。
+        未开始的任务统一计入待执行，已开始未结束的任务统一计入执行中。
+        入参：
+        1. bizDate：业务日期，格式 yyyyMMdd，表示统计哪一天的实例数据。
+    -->
     <select id="selectSummary" resultType="com.ganzhou.monitoring.dto.SummaryVO">
         select count(distinct t.system_code) as system_count,
                count(1) as task_count,
-               sum(case when x.status = 'PENDING' then 1 else 0 end) as pending_count,
-               sum(case when x.status = 'RUNNING' then 1 else 0 end) as running_count,
-               sum(case when x.status = 'SUCCESS' then 1 else 0 end) as success_count,
-               sum(case when x.status = 'FAILED' then 1 else 0 end) as failed_count,
-               sum(case when x.status = 'DELAYED' then 1 else 0 end) as delayed_count,
-               sum(case when x.status = 'TIMEOUT' then 1 else 0 end) as timeout_count
+               sum(case when x.result_status = 'NOTSTART' then 1 else 0 end) as not_start_count,
+               sum(case when x.result_status = 'RUNNING' then 1 else 0 end) as running_count,
+               sum(case when x.result_status = 'SUCCESS' then 1 else 0 end) as success_count,
+               sum(case when x.result_status = 'FAILED' then 1 else 0 end) as failed_count
         from (
                  select i.task_code,
                         case
                             when i.actual_end_time is not null and i.result_status = 'SUCCESS' then 'SUCCESS'
                             when i.actual_end_time is not null and i.result_status = 'FAILED' then 'FAILED'
-                            when i.actual_start_time is not null and i.actual_end_time is null and now() > i.predict_end_time then 'TIMEOUT'
                             when i.actual_start_time is not null and i.actual_end_time is null then 'RUNNING'
-                            when i.actual_start_time is null and now() > i.plan_start_time then 'DELAYED'
-                            else 'PENDING'
-                            end as status
+                            else 'NOTSTART'
+                            end as result_status
                  from monitor_task_instance i
                  where i.biz_date = #{bizDate}
              ) x
                  left join monitor_task t on x.task_code = t.task_code
     </select>
 
-    <!-- 查询任务卡片及其布局信息。 -->
+    <!--
+        查询本地大屏系统信息卡片列表。
+        用途：按系统维度统计指定业务日期下的待执行、执行中、成功、失败数量，并返回总数供前端渲染系统卡片。
+        说明：右上角总数等于四种状态数量之和，不单独统计延迟状态。
+        入参：
+        1. bizDate：业务日期，格式 yyyyMMdd，表示统计哪一天的系统卡片数据。
+        2. systemName：系统名称，支持模糊查询；为空时返回全部系统。
+    -->
+    <select id="selectSystemCards" resultType="com.ganzhou.monitoring.dto.SystemDashboardCardVO">
+        select s.system_code,
+               s.system_name,
+               s.owner_name,
+               s.supervisor_name,
+               sum(case when x.result_status = 'NOTSTART' then 1 else 0 end) as not_start_count,
+               sum(case when x.result_status = 'RUNNING' then 1 else 0 end) as running_count,
+               sum(case when x.result_status = 'SUCCESS' then 1 else 0 end) as success_count,
+               sum(case when x.result_status = 'FAILED' then 1 else 0 end) as failed_count,
+               count(x.task_code) as total_count
+        from monitor_system s
+                 left join (
+            select i.system_code,
+                   i.task_code,
+                   case
+                       when i.actual_end_time is not null and i.result_status = 'SUCCESS' then 'SUCCESS'
+                       when i.actual_end_time is not null and i.result_status = 'FAILED' then 'FAILED'
+                       when i.actual_start_time is not null and i.actual_end_time is null then 'RUNNING'
+                       else 'NOTSTART'
+                       end as result_status
+            from monitor_task_instance i
+            where i.biz_date = #{bizDate}
+        ) x on s.system_code = x.system_code
+        where s.is_flag = '0'
+        <if test="systemName != null and systemName != ''">
+            and s.system_name like concat('%', #{systemName}, '%')
+        </if>
+        group by s.system_code,
+                 s.system_name,
+                 s.owner_name,
+                 s.supervisor_name
+        order by s.system_code asc
+    </select>
+
+    <!--
+        查询本地大屏任务卡片列表。
+        用途：返回指定业务日期下的任务状态、计划时间、实际时间、耗时等信息，供大屏渲染任务节点。
+        状态口径：
+        1. 外部未回传开始信息：NOTSTART
+        2. 已开始且开始时间未超过最晚开始时间：RUNNING
+        3. 已开始但开始时间超过最晚开始时间，或已开始未结束且超过预计结束时间：DELAYED
+        4. 已结束但实际结束时间超过预计结束时间：结果状态保持 SUCCESS 或 FAILED，同时 delayedFlag = 1
+        5. 成功结束：SUCCESS
+        6. 失败结束：FAILED
+        入参：
+        1. bizDate：业务日期，格式 yyyyMMdd，表示查询哪一天的任务实例。
+        2. avgStartBizDate：历史平均耗时统计开始业务日期。
+        3. avgEndBizDate：历史平均耗时统计结束业务日期。
+    -->
     <select id="selectTaskCards" resultType="com.ganzhou.monitoring.dto.TaskCardVO">
-        select i.task_code,
+        select i.biz_date,
+               i.run_times,
+               i.task_code,
                t.task_name,
                i.system_code,
                s.system_name,
                t.owner_name,
                t.supervisor_name,
+               t.pre_requisite_prod,
+               t.the_batch_prod,
+               t.pos_x,
+               t.pos_y,
+               t.default_cost_minutes,
+               t.frequency,
+               t.is_flag as task_is_flag,
+               t.remark,
                case
                    when i.actual_end_time is not null and i.result_status = 'SUCCESS' then 'SUCCESS'
                    when i.actual_end_time is not null and i.result_status = 'FAILED' then 'FAILED'
-                   when i.actual_start_time is not null and i.actual_end_time is null and now() > i.predict_end_time then 'TIMEOUT'
+                   when i.actual_start_time is not null and i.actual_end_time is null and now() > i.predict_end_time then 'DELAYED'
+                   when i.actual_start_time is not null and i.latest_start_time is not null and i.actual_start_time > i.latest_start_time then 'DELAYED'
                    when i.actual_start_time is not null and i.actual_end_time is null then 'RUNNING'
-                   when i.actual_start_time is null and now() > i.plan_start_time then 'DELAYED'
-                   else 'PENDING'
-                   end as status,
+                   else 'NOTSTART'
+                   end as result_status,
                i.plan_start_time,
                i.latest_start_time,
                i.plan_end_time,
                i.actual_start_time,
                i.actual_end_time,
-               i.current_cost_minutes as current_cost_seconds,
-               t.avg_cost_minutes as avg_cost_seconds,
-               i.predict_end_time
+               case
+                   when i.actual_start_time is not null and i.actual_end_time is not null
+                       then timestampdiff(minute, i.actual_start_time, i.actual_end_time)
+                   when i.actual_start_time is not null and i.actual_end_time is null
+                       then timestampdiff(minute, i.actual_start_time, now())
+                   else 0
+                   end as current_cost_minutes,
+               ifnull((
+                   select cast(avg(h.current_cost_minutes) as signed)
+                   from monitor_task_instance h
+                   where h.task_code = i.task_code
+                     and h.biz_date <![CDATA[>=]]> #{avgStartBizDate}
+                     and h.biz_date <![CDATA[<=]]> #{avgEndBizDate}
+                     and h.result_status = 'SUCCESS'
+                     and h.current_cost_minutes is not null
+                     and h.current_cost_minutes > 0
+               ), t.avg_cost_minutes) as avg_cost_minutes,
+               i.predict_end_time,
+               case
+                   when i.actual_start_time is not null and i.latest_start_time is not null and i.actual_start_time > i.latest_start_time then 1
+                   when i.actual_start_time is not null and i.actual_end_time is null and now() > i.predict_end_time then 1
+                   when i.actual_end_time is not null and i.predict_end_time is not null and i.actual_end_time > i.predict_end_time then 1
+                   when i.delayed_flag = 1 then 1
+                   else 0
+                   end as delayed_flag,
+               case
+                   when i.actual_start_time is not null and i.actual_end_time is null and now() > i.predict_end_time then 1
+                   when i.actual_end_time is not null and i.predict_end_time is not null and i.actual_end_time > i.predict_end_time then 1
+                   when i.timeout_flag = 1 then 1
+                   else 0
+                   end as timeout_flag,
+               i.is_flag
         from monitor_task_instance i
                  left join monitor_system s on i.system_code = s.system_code
                  left join monitor_task t on i.task_code = t.task_code
         where i.biz_date = #{bizDate}
-          and (#{pageCode} is null or t.display_flag = '1')
         order by i.plan_start_time asc, i.task_code asc
     </select>
 
-    <!-- 查询单个任务的卡片详情。 -->
-    <select id="selectTaskCard" resultType="com.ganzhou.monitoring.dto.TaskCardVO">
-        select i.task_code,
-               t.task_name,
-               i.system_code,
-               s.system_name,
-               t.owner_name,
-               t.supervisor_name,
-               case
-                   when i.actual_end_time is not null and i.result_status = 'SUCCESS' then 'SUCCESS'
-                   when i.actual_end_time is not null and i.result_status = 'FAILED' then 'FAILED'
-                   when i.actual_start_time is not null and i.actual_end_time is null and now() > i.predict_end_time then 'TIMEOUT'
-                   when i.actual_start_time is not null and i.actual_end_time is null then 'RUNNING'
-                   when i.actual_start_time is null and now() > i.plan_start_time then 'DELAYED'
-                   else 'PENDING'
-                   end as status,
-               i.plan_start_time,
-               i.latest_start_time,
-               i.plan_end_time,
-               i.actual_start_time,
-               i.actual_end_time,
-               i.current_cost_minutes as current_cost_seconds,
-               t.avg_cost_minutes as avg_cost_seconds,
-               i.predict_end_time
-        from monitor_task_instance i
-                 left join monitor_system s on i.system_code = s.system_code
-                 left join monitor_task t on i.task_code = t.task_code
-        where i.biz_date = #{bizDate}
-          and i.task_code = #{taskCode}
-        limit 1
-    </select>
-
-    <!-- 查询任务依赖关系，用于前端绘制拓扑连线。 -->
+    <!--
+        查询任务依赖连线关系。
+        用途：返回任务之间的前后置关系，供前端绘制依赖箭头。
+    -->
     <select id="selectLinks" resultType="com.ganzhou.monitoring.dto.LinkVO">
-        select pre_task_code as from_task_code,
-               task_code as to_task_code,
-               direction as dependency_type,
-               '1' as strong_dependency_flag,
-               '' as output_desc
+        select pre_task_code,
+               task_code,
+               direction
         from monitor_task_dependency d
         order by pre_task_code asc, task_code asc
     </select>

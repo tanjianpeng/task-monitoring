@@ -2,9 +2,18 @@ package com.ganzhou.monitoring;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
+/**
+ * Description: 任务监控应用启动类。
+ *
+ * @author tanjianpeng
+ * @time 2026-04-07 18:14:49
+ * @version 1.0
+ */
 @SpringBootApplication
-public class BatchMonitoringApplication {
+@EnableScheduling
+public class TaskMonitoringApplication {
 
     /**
      * Spring Boot 启动入口。
@@ -13,6 +22,6 @@ public class BatchMonitoringApplication {
      * @param args 启动参数
      */
     public static void main(String[] args) {
-        SpringApplication.run(BatchMonitoringApplication.class, args);
+        SpringApplication.run(TaskMonitoringApplication.class, args);
     }
 }

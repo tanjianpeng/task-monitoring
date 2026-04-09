@@ -2,17 +2,22 @@ package com.ganzhou.monitoring.dto;
 
 import lombok.Data;
 
+/**
+ * Description: 依赖连线对象。
+ *
+ * @author tanjianpeng
+ * @time 2026-04-07 18:14:49
+ * @version 1.0
+ */
 @Data
 public class LinkVO {
 
-    /** 起始任务编码。 */
-    private String fromTaskCode;
-    /** 目标任务编码。 */
-    private String toTaskCode;
-    /** 依赖类型。 */
-    private String dependencyType;
-    /** 是否强依赖。 */
-    private String strongDependencyFlag;
-    /** 输出物说明。 */
-    private String outputDesc;
+    /** 前置任务编码。 */
+    private String preTaskCode;
+
+    /** 当前任务编码。 */
+    private String taskCode;
+
+    /** 箭头方向。 */
+    private String direction;
 }

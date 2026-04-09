@@ -3,25 +3,19 @@
   "message": "success",
   "data": [
     {
-      "fromTaskCode": "BDPS_BAT_01",
-      "toTaskCode": "ACPL_BAT_01",
-      "dependencyType": "TASK",
-      "strongDependencyFlag": "0",
-      "outputDesc": "模型数据"
+      "preTaskCode": "BDPS_BAT_01",
+      "taskCode": "ACPL_BAT_01",
+      "direction": "RIGHT"
     },
     {
-      "fromTaskCode": "ACPL_BAT_01",
-      "toTaskCode": "ACPL_BAT_02",
-      "dependencyType": "TASK",
-      "strongDependencyFlag": "1",
-      "outputDesc": "核算平台卸数文件"
+      "preTaskCode": "ACPL_BAT_01",
+      "taskCode": "ACPL_BAT_02",
+      "direction": "RIGHT"
     },
     {
-      "fromTaskCode": "ACPL_BAT_02",
-      "toTaskCode": "NWLS_BAT_01",
-      "dependencyType": "FILE",
-      "strongDependencyFlag": "1",
-      "outputDesc": "核算日终卸数文件8个"
+      "preTaskCode": "ACPL_BAT_02",
+      "taskCode": "NWLS_BAT_01",
+      "direction": "RIGHT"
     }
   ]
 }
