@@ -95,6 +95,8 @@ public class TaskInstanceScheduler {
 
     /**
      * 尝试获取数据库命名锁。
+     *
+     * @param lockName 数据库命名锁名称
      */
     private boolean tryAcquireLock(String lockName) {
         Integer locked = schedulerLockMapper.acquireLock(lockName, dbLockTimeoutSeconds);
@@ -103,6 +105,8 @@ public class TaskInstanceScheduler {
 
     /**
      * 释放数据库命名锁。
+     *
+     * @param lockName 数据库命名锁名称
      */
     private void releaseLock(String lockName) {
         try {

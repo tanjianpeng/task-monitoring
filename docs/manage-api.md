@@ -68,8 +68,6 @@
   "taskCode": "ACPL_BAT_01",
   "taskName": "核算平台日终批处理任务",
   "systemCode": "ACPL",
-  "ownerName": "王臣",
-  "supervisorName": "谢卫华",
   "preRequisiteProd": "核心日终文件",
   "theBatchProd": "核算平台批处理结果文件",
   "planStartTime": "2026-03-31 21:30:00",

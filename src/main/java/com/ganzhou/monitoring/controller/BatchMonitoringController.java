@@ -45,6 +45,8 @@ public class BatchMonitoringController {
     /**
      * 外部系统统一上报接口。
      * 入参格式按外部接口文档兼容 systemCode、taskCode、bizDate、status、requestTime、sign。
+     *
+     * @param request 外部系统上报的任务状态请求报文
      */
     @PostMapping("/monitor/task/report")
     public ResultDto<String> report(@RequestBody TaskReportRequest request) {
@@ -70,6 +72,8 @@ public class BatchMonitoringController {
 
     /**
      * 本地大屏系统列表查询接口。
+     *
+     * @param systemName 系统名称，预留模糊查询条件
      */
     @GetMapping("/monitor/local/querySystems")
     public ResultDto<List<SystemDashboardCardVO>> querySystems(@RequestParam(required = false) String systemName) {
@@ -88,6 +92,8 @@ public class BatchMonitoringController {
     /**
      * 手工触发某日实例初始化。
      * 该接口与每天 0 点定时任务共用同一套服务逻辑，便于补数或人工重刷。
+     *
+     * @param bizDate 需要初始化实例的业务日期
      */
     @PostMapping("/monitor/task/instances/init")
     public ResultDto<Integer> initTaskInstances(
@@ -95,26 +101,41 @@ public class BatchMonitoringController {
         return ResultDto.success(monitoringService.initializeTaskInstances(bizDate));
     }
 
-    /** 查询系统列表。 */
+    /**
+     * 查询系统列表。
+     */
     @GetMapping("/manage/systems")
     public ResultDto<List<MonitorSystem>> listSystems() {
         return ResultDto.success(systemManageService.listSystems());
     }
 
-    /** 查询系统详情。 */
+    /**
+     * 查询系统详情。
+     *
+     * @param systemCode 系统编码
+     */
     @GetMapping("/manage/systems/{systemCode}")
     public ResultDto<MonitorSystem> systemDetail(@PathVariable String systemCode) {
         return ResultDto.success(systemManageService.getSystem(systemCode));
     }
 
-    /** 新增系统。 */
+    /**
+     * 新增系统。
+     *
+     * @param request 系统新增请求参数
+     */
     @PostMapping("/manage/systems")
     public ResultDto<Void> createSystem(@Valid @RequestBody SystemSaveRequest request) {
         systemManageService.createSystem(request);
         return ResultDto.successMessage("系统新增成功");
     }
 
-    /** 修改系统。 */
+    /**
+     * 修改系统。
+     *
+     * @param systemCode 系统编码
+     * @param request 系统修改请求参数
+     */
     @PutMapping("/manage/systems/{systemCode}")
     public ResultDto<Void> updateSystem(@PathVariable String systemCode,
                                         @Valid @RequestBody SystemSaveRequest request) {
@@ -123,33 +144,52 @@ public class BatchMonitoringController {
         return ResultDto.successMessage("系统修改成功");
     }
 
-    /** 删除系统。 */
+    /**
+     * 删除系统。
+     *
+     * @param systemCode 系统编码
+     */
     @DeleteMapping("/manage/systems/{systemCode}")
     public ResultDto<Void> deleteSystem(@PathVariable String systemCode) {
         systemManageService.deleteSystem(systemCode);
         return ResultDto.successMessage("系统删除成功");
     }
 
-    /** 查询任务列表。 */
+    /**
+     * 查询任务列表。
+     */
     @GetMapping("/manage/tasks")
     public ResultDto<List<MonitorTaskDef>> listTasks() {
         return ResultDto.success(taskManageService.listTasks());
     }
 
-    /** 查询任务详情及依赖关系。 */
+    /**
+     * 查询任务详情及依赖关系。
+     *
+     * @param taskCode 任务编码
+     */
     @GetMapping("/manage/tasks/{taskCode}")
     public ResultDto<TaskManageDetailVO> taskManageDetail(@PathVariable String taskCode) {
         return ResultDto.success(taskManageService.getTaskDetail(taskCode));
     }
 
-    /** 新增任务及依赖关系。 */
+    /**
+     * 新增任务及依赖关系。
+     *
+     * @param request 任务新增请求参数
+     */
     @PostMapping("/manage/tasks")
     public ResultDto<Void> createTask(@Valid @RequestBody TaskSaveRequest request) {
         taskManageService.createTask(request);
         return ResultDto.successMessage("任务新增成功");
     }
 
-    /** 修改任务及依赖关系。 */
+    /**
+     * 修改任务及依赖关系。
+     *
+     * @param taskCode 任务编码
+     * @param request 任务修改请求参数
+     */
     @PutMapping("/manage/tasks/{taskCode}")
     public ResultDto<Void> updateTask(@PathVariable String taskCode,
                                       @Valid @RequestBody TaskSaveRequest request) {
@@ -158,7 +198,11 @@ public class BatchMonitoringController {
         return ResultDto.successMessage("任务修改成功");
     }
 
-    /** 删除任务及其依赖关系。 */
+    /**
+     * 删除任务及其依赖关系。
+     *
+     * @param taskCode 任务编码
+     */
     @DeleteMapping("/manage/tasks/{taskCode}")
     public ResultDto<Void> deleteTask(@PathVariable String taskCode) {
         taskManageService.deleteTask(taskCode);
@@ -168,6 +212,9 @@ public class BatchMonitoringController {
     /**
      * 校验外部系统上报必要字段。
      * 图片中的报文格式只要求核心字段，因此这里不走通用 @Valid 失败响应。
+     *
+     * @param action 接口动作类型，兼容旧接口路径传入的 begin/end 等动作
+     * @param request 外部系统上报请求报文
      */
     private void validateExternalRequest(String action, TaskReportRequest request) {
         if (request == null) {

@@ -179,32 +179,30 @@
 9. `data.taskList[].taskName`：任务名称
 10. `data.taskList[].systemCode`：所属系统编码
 11. `data.taskList[].systemName`：所属系统名称
-12. `data.taskList[].ownerName`：任务负责人
-13. `data.taskList[].supervisorName`：监督人
-14. `data.taskList[].preRequisiteProd`：前置依赖产物
-15. `data.taskList[].theBatchProd`：本批处理任务产出物
-16. `data.taskList[].posX`：任务在大屏上的横坐标
-17. `data.taskList[].posY`：任务在大屏上的纵坐标
-18. `data.taskList[].defaultCostMinutes`：默认耗时，单位分钟
-19. `data.taskList[].frequency`：频率
-20. `data.taskList[].taskIsFlag`：任务表中的是否大屏展示字段，0是，1否
-21. `data.taskList[].remark`：任务备注
-22. `data.taskList[].resultStatus`：当前运行结果状态；未回传开始时间为 `NOTSTART`，开始但未超过最晚开始时间为 `RUNNING`，开始晚于最晚开始时间或执行中超过预计结束时间为 `DELAYED`
-23. `data.taskList[].planStartTime`：计划开始时间
-24. `data.taskList[].latestStartTime`：最晚开始时间，允许延迟分钟数由后端按任务编码查询后计算
-25. `data.taskList[].planEndTime`：计划结束时间
-26. `data.taskList[].actualStartTime`：实际开始时间，格式 `HH:mm:ss`
-27. `data.taskList[].actualEndTime`：实际结束时间，格式 `HH:mm:ss`
-28. `data.taskList[].currentCostMinutes`：当前耗时，格式 `mm:ss`；结束任务按“结束回调时间 - 开始回调时间”计算，待执行任务为空
-29. `data.taskList[].avgCostMinutes`：历史平均耗时，格式 `mm:ss`；平日按往前 30 个非月底业务日统计，月底按往前 6 个自然月底业务日统计
-30. `data.taskList[].predictEndTime`：预计结束时间；收到开始时间后按“开始时间 + 历史平均耗时”计算，未开始时通常为空
-31. `data.taskList[].delayedFlag`：是否延迟，1是，0否；包含开始时间超过最晚开始时间、执行中超过预计结束时间、已结束但晚于预计结束时间
-32. `data.taskList[].timeoutFlag`：是否超过预计结束时间，1是，0否；该字段仅作为标记，结果状态统一并入 `DELAYED`
-33. `data.taskList[].resultStatusName`：执行结果状态中文说明，例如待执行、执行中、成功、失败、延迟
-34. `data.taskList[].isFlag`：实例表中的是否展示字段，1否，0是
-35. `data.依赖关系节点list[].preTaskCode`：前置任务编码
-36. `data.依赖关系节点list[].taskCode`：当前任务编码
-37. `data.依赖关系节点list[].direction`：箭头方向，常见值为 `TOP`、`BOTTOM`、`LEFT`、`RIGHT`
+12. `data.taskList[].preRequisiteProd`：前置依赖产物
+13. `data.taskList[].theBatchProd`：本批处理任务产出物
+14. `data.taskList[].posX`：任务在大屏上的横坐标
+15. `data.taskList[].posY`：任务在大屏上的纵坐标
+16. `data.taskList[].defaultCostMinutes`：默认耗时，单位分钟
+17. `data.taskList[].batchProcessing`：跑批周期，`D` 表示每日跑批，`M` 表示月末跑批，`NM` 表示非月末跑批
+18. `data.taskList[].taskIsFlag`：任务表中的是否大屏展示字段，0是，1否
+19. `data.taskList[].remark`：任务备注
+20. `data.taskList[].resultStatus`：当前运行结果状态；未回传开始时间为 `NOTSTART`，开始但未超过最晚开始时间为 `RUNNING`，开始晚于最晚开始时间或执行中超过预计结束时间为 `DELAYED`
+21. `data.taskList[].planStartTime`：计划开始时间
+22. `data.taskList[].latestStartTime`：最晚开始时间，允许延迟分钟数由后端按任务编码查询后计算
+23. `data.taskList[].planEndTime`：计划结束时间
+24. `data.taskList[].actualStartTime`：实际开始时间，格式 `HH:mm:ss`
+25. `data.taskList[].actualEndTime`：实际结束时间，格式 `HH:mm:ss`
+26. `data.taskList[].currentCostMinutes`：当前耗时，格式 `mm:ss`；结束任务按“结束回调时间 - 开始回调时间”计算，待执行任务为空
+27. `data.taskList[].avgCostMinutes`：历史平均耗时，格式 `mm:ss`；平日按往前 30 个非月底业务日统计，月底按往前 6 个自然月底业务日统计
+28. `data.taskList[].latestEndTime`：最晚结束时间；未开始时按计划结束时间加允许延迟分钟数计算，开始后按开始时间加历史平均耗时再加允许延迟分钟数计算
+29. `data.taskList[].delayedFlag`：是否延迟，1是，0否；包含开始时间超过最晚开始时间、执行中超过预计结束时间、已结束但晚于预计结束时间
+30. `data.taskList[].timeoutFlag`：是否超过预计结束时间，1是，0否；该字段仅作为标记，结果状态统一并入 `DELAYED`
+31. `data.taskList[].resultStatusName`：执行结果状态中文说明，例如待执行、执行中、成功、失败、延迟
+32. `data.taskList[].isFlag`：实例表中的是否展示字段，1否，0是
+33. `data.依赖关系节点list[].preTaskCode`：前置任务编码
+34. `data.依赖关系节点list[].taskCode`：当前任务编码
+35. `data.依赖关系节点list[].direction`：箭头方向，常见值为 `TOP`、`BOTTOM`、`LEFT`、`RIGHT`
 
 响应示例：
 
@@ -221,14 +219,12 @@
       "taskName": "报表平台取数任务",
       "systemCode": "BDPS",
       "systemName": "报表平台",
-      "ownerName": "李涛",
-      "supervisorName": "何锋",
       "preRequisiteProd": "",
       "theBatchProd": "报表平台基础数据",
       "posX": 120,
       "posY": 80,
       "defaultCostMinutes": 20,
-      "frequency": "D",
+      "batchProcessing": "D",
       "taskIsFlag": "0",
       "remark": "报表平台前置任务",
       "resultStatus": "SUCCESS",
@@ -240,7 +236,7 @@
       "actualEndTime": "20:15:26",
       "currentCostMinutes": "15:23",
       "avgCostMinutes": "18:00",
-      "predictEndTime": "2026-04-07 20:18:03",
+      "latestEndTime": "2026-04-07 20:18:03",
       "delayedFlag": 0,
       "timeoutFlag": 0,
       "isFlag": "0"
@@ -252,14 +248,12 @@
       "taskName": "核算平台日终批处理任务",
       "systemCode": "ACPL",
       "systemName": "核算平台",
-      "ownerName": "王臣",
-      "supervisorName": "谢卫华",
       "preRequisiteProd": "报表平台基础数据",
       "theBatchProd": "核算平台日终结果文件",
       "posX": 320,
       "posY": 80,
       "defaultCostMinutes": 35,
-      "frequency": "D",
+      "batchProcessing": "D",
       "taskIsFlag": "0",
       "remark": "核心日终主任务",
       "resultStatus": "RUNNING",
@@ -271,7 +265,7 @@
       "actualEndTime": null,
       "currentCostMinutes": "22:00",
       "avgCostMinutes": "35:00",
-      "predictEndTime": "2026-04-07 22:06:20",
+      "latestEndTime": "2026-04-07 22:06:20",
       "delayedFlag": 0,
       "timeoutFlag": 0,
       "isFlag": "0"
@@ -283,14 +277,12 @@
       "taskName": "核算平台卸数任务",
       "systemCode": "ACPL",
       "systemName": "核算平台",
-      "ownerName": "王臣",
-      "supervisorName": "谢卫华",
       "preRequisiteProd": "核算平台日终结果文件",
       "theBatchProd": "核算平台卸数文件",
       "posX": 520,
       "posY": 80,
       "defaultCostMinutes": 20,
-      "frequency": "D",
+      "batchProcessing": "D",
       "taskIsFlag": "0",
       "remark": "核算平台卸数子任务",
       "resultStatus": "NOTSTART",
@@ -302,7 +294,7 @@
       "actualEndTime": null,
       "currentCostMinutes": null,
       "avgCostMinutes": "20:00",
-      "predictEndTime": null,
+      "latestEndTime": null,
       "delayedFlag": 0,
       "timeoutFlag": 0,
       "isFlag": "0"
@@ -314,14 +306,12 @@
       "taskName": "新网贷系统卸数任务",
       "systemCode": "NWLS",
       "systemName": "新网贷系统",
-      "ownerName": "温强",
-      "supervisorName": "何锋",
       "preRequisiteProd": "核算平台卸数文件",
       "theBatchProd": "新网贷日终数据",
       "posX": 720,
       "posY": 80,
       "defaultCostMinutes": 45,
-      "frequency": "D",
+      "batchProcessing": "D",
       "taskIsFlag": "0",
       "remark": "新网贷接续任务",
       "resultStatus": "DELAYED",
@@ -333,7 +323,7 @@
       "actualEndTime": null,
       "currentCostMinutes": null,
       "avgCostMinutes": "45:00",
-      "predictEndTime": null,
+      "latestEndTime": null,
       "delayedFlag": 1,
       "timeoutFlag": 0,
       "isFlag": "0"

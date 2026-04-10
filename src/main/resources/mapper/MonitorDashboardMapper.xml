@@ -28,7 +28,14 @@
                             else 'NOTSTART'
                             end as result_status
                  from monitor_task_instance i
+                          left join monitor_task t on i.task_code = t.task_code
                  where i.biz_date = #{bizDate}
+                   and t.is_path = '0'
+                   and (
+                       (#{monthEndView} = true and t.batch_processing = 'M')
+                       or
+                       (#{monthEndView} = false and t.batch_processing in ('D', 'NM'))
+                   )
              ) x
                  left join monitor_task t on x.task_code = t.task_code
     </select>
@@ -62,9 +69,27 @@
                        else 'NOTSTART'
                        end as result_status
             from monitor_task_instance i
+                     left join monitor_task t on i.task_code = t.task_code
             where i.biz_date = #{bizDate}
+              and t.is_path = '0'
+              and (
+                  (#{monthEndView} = true and t.batch_processing = 'M')
+                  or
+                  (#{monthEndView} = false and t.batch_processing in ('D', 'NM'))
+              )
         ) x on s.system_code = x.system_code
         where s.is_flag = '0'
+          and exists (
+            select 1
+            from monitor_task t
+            where t.system_code = s.system_code
+              and t.is_path = '0'
+              and (
+                  (#{monthEndView} = true and t.batch_processing = 'M')
+                  or
+                  (#{monthEndView} = false and t.batch_processing in ('D', 'NM'))
+              )
+        )
         <if test="systemName != null and systemName != ''">
             and s.system_name like concat('%', #{systemName}, '%')
         </if>
@@ -95,20 +120,19 @@
                t.task_name,
                i.system_code,
                s.system_name,
-               t.owner_name,
-               t.supervisor_name,
                t.pre_requisite_prod,
                t.the_batch_prod,
                t.pos_x,
                t.pos_y,
                t.default_cost_minutes,
-               i.frequency,
+               t.batch_processing,
+               t.is_path,
                t.is_flag as task_is_flag,
                t.remark,
                case
                    when i.actual_end_time is not null and i.result_status = 'SUCCESS' then 'SUCCESS'
                    when i.actual_end_time is not null and i.result_status = 'FAILED' then 'FAILED'
-                   when i.actual_start_time is not null and i.actual_end_time is null and now() > i.predict_end_time then 'DELAYED'
+                   when i.actual_start_time is not null and i.actual_end_time is null and now() > i.latest_end_time then 'DELAYED'
                    when i.actual_start_time is not null and i.latest_start_time is not null and i.actual_start_time > i.latest_start_time then 'DELAYED'
                    when i.actual_start_time is not null and i.actual_end_time is null then 'RUNNING'
                    else 'NOTSTART'
@@ -120,17 +144,17 @@
                i.actual_end_time,
                i.current_cost_minutes * 60 as current_cost_seconds,
                i.avg_cost_minutes * 60 as avg_cost_seconds,
-               i.predict_end_time,
+               i.latest_end_time,
                case
                    when i.actual_start_time is not null and i.latest_start_time is not null and i.actual_start_time > i.latest_start_time then 1
-                   when i.actual_start_time is not null and i.actual_end_time is null and now() > i.predict_end_time then 1
-                   when i.actual_end_time is not null and i.predict_end_time is not null and i.actual_end_time > i.predict_end_time then 1
+                   when i.actual_start_time is not null and i.actual_end_time is null and now() > i.latest_end_time then 1
+                   when i.actual_end_time is not null and i.latest_end_time is not null and i.actual_end_time > i.latest_end_time then 1
                    when i.delayed_flag = 1 then 1
                    else 0
                    end as delayed_flag,
                case
-                   when i.actual_start_time is not null and i.actual_end_time is null and now() > i.predict_end_time then 1
-                   when i.actual_end_time is not null and i.predict_end_time is not null and i.actual_end_time > i.predict_end_time then 1
+                   when i.actual_start_time is not null and i.actual_end_time is null and now() > i.latest_end_time then 1
+                   when i.actual_end_time is not null and i.latest_end_time is not null and i.actual_end_time > i.latest_end_time then 1
                    when i.timeout_flag = 1 then 1
                    else 0
                    end as timeout_flag,
@@ -139,6 +163,12 @@
                  left join monitor_system s on i.system_code = s.system_code
                  left join monitor_task t on i.task_code = t.task_code
         where i.biz_date = #{bizDate}
+          and t.is_path = '0'
+          and (
+              (#{monthEndView} = true and t.batch_processing = 'M')
+              or
+              (#{monthEndView} = false and t.batch_processing in ('D', 'NM'))
+          )
         order by i.plan_start_time asc, i.task_code asc
     </select>
 
@@ -151,6 +181,28 @@
                task_code,
                direction
         from monitor_task_dependency d
+        where exists (
+            select 1
+            from monitor_task pre
+            where pre.task_code = d.pre_task_code
+              and pre.is_path = '0'
+              and (
+                  (#{monthEndView} = true and pre.batch_processing = 'M')
+                  or
+                  (#{monthEndView} = false and pre.batch_processing in ('D', 'NM'))
+              )
+        )
+          and exists (
+            select 1
+            from monitor_task cur
+            where cur.task_code = d.task_code
+              and cur.is_path = '0'
+              and (
+                  (#{monthEndView} = true and cur.batch_processing = 'M')
+                  or
+                  (#{monthEndView} = false and cur.batch_processing in ('D', 'NM'))
+              )
+        )
         order by pre_task_code asc, task_code asc
     </select>
 </mapper>

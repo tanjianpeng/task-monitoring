@@ -30,12 +30,6 @@ public class TaskSaveRequest {
     @NotBlank
     private String systemCode;
 
-    /** 负责人。 */
-    private String ownerName;
-
-    /** 监督人。 */
-    private String supervisorName;
-
     /** 前置依赖产物。 */
     private String preRequisiteProd;
 
@@ -52,6 +46,12 @@ public class TaskSaveRequest {
 
     /** 默认耗时分钟数。 */
     private Integer defaultCostMinutes;
+
+    /** 跑批周期。 */
+    private String batchProcessing;
+
+    /** 是否关键路径。 */
+    private String isPath;
 
     /** 横坐标。 */
     private Integer posX;

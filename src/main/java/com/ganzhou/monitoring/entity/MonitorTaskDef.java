@@ -38,16 +38,6 @@ public class MonitorTaskDef {
     @ApiModelProperty(name = "systemCode", value = "所属系统编码")
     private String systemCode;
 
-    /** 负责人。 */
-    @Column(name = "owner_name", length = 64)
-    @ApiModelProperty(name = "ownerName", value = "负责人")
-    private String ownerName;
-
-    /** 监督人。 */
-    @Column(name = "supervisor_name", length = 64)
-    @ApiModelProperty(name = "supervisorName", value = "监督人")
-    private String supervisorName;
-
     /** 前置依赖产物。 */
     @Column(name = "pre_requisite_prod", length = 512)
     @ApiModelProperty(name = "preRequisiteProd", value = "前置依赖产物")
@@ -72,6 +62,16 @@ public class MonitorTaskDef {
     @Column(name = "default_cost_minutes")
     @ApiModelProperty(name = "defaultCostMinutes", value = "预计耗时(分钟)")
     private Integer defaultCostMinutes;
+
+    /** 跑批周期。 */
+    @Column(name = "batch_processing", length = 10)
+    @ApiModelProperty(name = "batchProcessing", value = "跑批周期，D:每日 M:月末 NM:非月末")
+    private String batchProcessing;
+
+    /** 是否关键路径。 */
+    @Column(name = "is_path", length = 1, nullable = false)
+    @ApiModelProperty(name = "isPath", value = "是否关键路径，0是，1否")
+    private String isPath;
 
     /** 横坐标。 */
     @Column(name = "pos_x", nullable = false)

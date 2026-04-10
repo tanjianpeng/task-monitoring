@@ -27,6 +27,8 @@ public class ResultDto<T> {
 
     /**
      * 成功响应。
+     *
+     * @param data 业务数据
      */
     public static <T> ResultDto<T> success(T data) {
         return new ResultDto<>("0000", "success", data);
@@ -34,6 +36,8 @@ public class ResultDto<T> {
 
     /**
      * 成功响应，仅返回提示信息。
+     *
+     * @param message 成功提示信息
      */
     public static <T> ResultDto<T> successMessage(String message) {
         return new ResultDto<>("0000", message, null);
@@ -41,6 +45,8 @@ public class ResultDto<T> {
 
     /**
      * 失败响应。
+     *
+     * @param message 失败提示信息
      */
     public static <T> ResultDto<T> fail(String message) {
         return new ResultDto<>("9999", message, null);

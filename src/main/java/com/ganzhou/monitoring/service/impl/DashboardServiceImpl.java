@@ -6,7 +6,9 @@ import com.ganzhou.monitoring.mapper.MonitorTaskInstanceMapper;
 import com.ganzhou.monitoring.service.DashboardService;
 import com.ganzhou.monitoring.constant.TaskResultStatusEnum;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -23,6 +25,7 @@ import java.util.*;
  * @version 1.0
  */
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class DashboardServiceImpl implements DashboardService {
 
@@ -43,29 +46,48 @@ public class DashboardServiceImpl implements DashboardService {
     private final MonitorTaskInstanceMapper taskInstanceMapper;
 
     @Override
+    @Transactional(readOnly = true)
     public Map<String, String> getStatistics() {
-        LocalDate bizDate = resolveDashboardBizDate();
-        String formatBizDate = formatBizDate(bizDate);
-        SummaryVO summary = dashboardMapper.selectSummary(formatBizDate);
-        return buildStatistics(summary);
+        try {
+            LocalDate bizDate = resolveDashboardBizDate();
+            String formatBizDate = formatBizDate(bizDate);
+            SummaryVO summary = dashboardMapper.selectSummary(formatBizDate, isMonthEndView(bizDate));
+            return buildStatistics(summary);
+        } catch (RuntimeException ex) {
+            log.error("查询本地大屏顶部统计异常", ex);
+            throw ex;
+        }
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<SystemDashboardCardVO> getSystems(String systemName) {
-        LocalDate bizDate = resolveDashboardBizDate();
-        return dashboardMapper.selectSystemCards(formatBizDate(bizDate), systemName);
+        try {
+            LocalDate bizDate = resolveDashboardBizDate();
+            return dashboardMapper.selectSystemCards(formatBizDate(bizDate), systemName, isMonthEndView(bizDate));
+        } catch (RuntimeException ex) {
+            log.error("查询本地大屏系统卡片异常，systemName={}", systemName, ex);
+            throw ex;
+        }
     }
 
     @Override
+    @Transactional(readOnly = true)
     public TaskStatusDataVO getTaskStatusList() {
-        LocalDate bizDate = resolveDashboardBizDate();
-        String formatBizDate = formatBizDate(bizDate);
-        List<TaskCardVO> taskCards = dashboardMapper.selectTaskCards(formatBizDate);
-        List<LinkVO> links = dashboardMapper.selectLinks();
-        TaskStatusDataVO result = new TaskStatusDataVO();
-        result.setTaskList(buildTaskItems(taskCards, links));
-        result.setDependencyNodeList(links);
-        return result;
+        try {
+            LocalDate bizDate = resolveDashboardBizDate();
+            String formatBizDate = formatBizDate(bizDate);
+            boolean monthEndView = isMonthEndView(bizDate);
+            List<TaskCardVO> taskCards = dashboardMapper.selectTaskCards(formatBizDate, monthEndView);
+            List<LinkVO> links = dashboardMapper.selectLinks(monthEndView);
+            TaskStatusDataVO result = new TaskStatusDataVO();
+            result.setTaskList(buildTaskItems(taskCards, links));
+            result.setDependencyNodeList(links);
+            return result;
+        } catch (RuntimeException ex) {
+            log.error("查询本地大屏任务状态异常", ex);
+            throw ex;
+        }
     }
 
     private String formatBizDate(LocalDate bizDate) {
@@ -75,6 +97,8 @@ public class DashboardServiceImpl implements DashboardService {
     /**
      * 将顶部汇总对象转成前端需要的字符串对象。
      * 返回字段统一使用稳定英文 key，便于前端按固定字段名取值渲染。
+     *
+     * @param summary 顶部统计汇总对象
      */
     private Map<String, String> buildStatistics(SummaryVO summary) {
         Map<String, String> result = new LinkedHashMap<>();
@@ -90,6 +114,9 @@ public class DashboardServiceImpl implements DashboardService {
     /**
      * 将任务卡片组装成任务列表。
      * 任务节点和依赖连线已拆分成两个 list，方便前端分别渲染节点和箭头。
+     *
+     * @param taskCards 任务卡片原始数据列表
+     * @param links 任务依赖连线列表
      */
     private List<TaskDashboardItemVO> buildTaskItems(List<TaskCardVO> taskCards, List<LinkVO> links) {
         LocalDate dashboardBizDate = resolveDashboardBizDate();
@@ -102,14 +129,13 @@ public class DashboardServiceImpl implements DashboardService {
             item.setTaskName(card.getTaskName());
             item.setSystemCode(card.getSystemCode());
             item.setSystemName(card.getSystemName());
-            item.setOwnerName(card.getOwnerName());
-            item.setSupervisorName(card.getSupervisorName());
             item.setPreRequisiteProd(card.getPreRequisiteProd());
             item.setTheBatchProd(card.getTheBatchProd());
             item.setPosX(card.getPosX());
             item.setPosY(card.getPosY());
             item.setDefaultCostMinutes(card.getDefaultCostMinutes());
-            item.setFrequency(card.getFrequency());
+            item.setBatchProcessing(card.getBatchProcessing());
+            item.setIsPath(card.getIsPath());
             item.setTaskIsFlag(card.getTaskIsFlag());
             item.setRemark(card.getRemark());
             item.setPlanStartTime(card.getPlanStartTime());
@@ -119,7 +145,7 @@ public class DashboardServiceImpl implements DashboardService {
             item.setActualEndTime(formatClockTime(card.getActualEndTime()));
             item.setCurrentCostMinutes(formatCurrentCost(card));
             item.setAvgCostMinutes(formatAverageCost(dashboardBizDate, card.getTaskCode(), card.getDefaultCostMinutes()));
-            item.setPredictEndTime(card.getPredictEndTime());
+            item.setLatestEndTime(card.getLatestEndTime());
             item.setDelayedFlag(card.getDelayedFlag());
             item.setTimeoutFlag(card.getTimeoutFlag());
             item.setResultStatus(card.getResultStatus());
@@ -144,6 +170,8 @@ public class DashboardServiceImpl implements DashboardService {
 
     /**
      * 将时间格式化成任务卡片需要的 HH:mm:ss。
+     *
+     * @param value 原始时间
      */
     private String formatClockTime(LocalDateTime value) {
         return value == null ? null : value.format(CARD_TIME_FORMATTER);
@@ -151,6 +179,8 @@ public class DashboardServiceImpl implements DashboardService {
 
     /**
      * 将秒数格式化成任务卡片需要的 mm:ss。
+     *
+     * @param seconds 秒数
      */
     private String formatCostSeconds(Integer seconds) {
         if (seconds == null || seconds <= 0) {
@@ -166,6 +196,8 @@ public class DashboardServiceImpl implements DashboardService {
     /**
      * 格式化任务当前耗时。
      * 待执行任务没有耗时，直接返回空值；其余场景按实际秒数转成 mm:ss。
+     *
+     * @param card 任务卡片原始数据
      */
     private String formatCurrentCost(TaskCardVO card) {
         if (card.getActualStartTime() == null) {
@@ -177,6 +209,10 @@ public class DashboardServiceImpl implements DashboardService {
     /**
      * 按当前业务日期口径格式化历史平均耗时。
      * 平日统计近 30 个非月底业务日，月底统计往前 6 个自然月底业务日。
+     *
+     * @param bizDate 当前大屏业务日期
+     * @param taskCode 任务编码
+     * @param defaultCostMinutes 默认耗时分钟数
      */
     private String formatAverageCost(LocalDate bizDate, String taskCode, Integer defaultCostMinutes) {
         List<String> bizDateList = isMonthEndView(bizDate)
@@ -197,6 +233,8 @@ public class DashboardServiceImpl implements DashboardService {
 
     /**
      * 将结果状态码转成中文说明，便于前端悬浮弹框直接展示状态徽标。
+     *
+     * @param resultStatus 任务结果状态编码
      */
     private String resolveResultStatusName(String resultStatus) {
         if (resultStatus == null || resultStatus.isBlank()) {
@@ -213,6 +251,9 @@ public class DashboardServiceImpl implements DashboardService {
     /**
      * 构造平日场景历史平均耗时统计日期列表。
      * 从当前业务日期往前取 30 个非月底业务日，不包含当前业务日期本身。
+     *
+     * @param bizDate 当前业务日期
+     * @param size 需要回溯的业务日数量
      */
     private List<String> buildPreviousDailyBizDates(LocalDate bizDate, int size) {
         List<String> result = new ArrayList<>();
@@ -229,6 +270,9 @@ public class DashboardServiceImpl implements DashboardService {
     /**
      * 构造月底场景历史平均耗时统计日期列表。
      * 从当前业务日期往前取 6 个自然月底业务日，不包含当前业务日期本身。
+     *
+     * @param bizDate 当前业务日期
+     * @param size 需要回溯的月底数量
      */
     private List<String> buildPreviousMonthEndBizDates(LocalDate bizDate, int size) {
         List<String> result = new ArrayList<>();
@@ -243,6 +287,8 @@ public class DashboardServiceImpl implements DashboardService {
     /**
      * 判断是否为月底视图。
      * 业务日期为当月最后一天时返回 true；传空值时返回 false，避免空指针。
+     *
+     * @param bizDate 业务日期
      */
     private boolean isMonthEndView(LocalDate bizDate) {
         if (bizDate == null) {
@@ -255,6 +301,10 @@ public class DashboardServiceImpl implements DashboardService {
      * 按依赖关系对任务列表做拓扑排序。
      * 这样前端收到的 list 会尽量按“前置任务在前，末尾任务在后”的顺序排列。
      * 若依赖配置中存在环，则保留剩余任务的原始顺序追加到末尾。
+     *
+     * @param taskCards 任务卡片原始数据列表
+     * @param taskItemMap 任务编码与任务出参的映射
+     * @param links 任务依赖连线列表
      */
     private List<TaskDashboardItemVO> sortTaskItemsByDependency(List<TaskCardVO> taskCards,
                                                                 Map<String, TaskDashboardItemVO> taskItemMap,
@@ -318,6 +368,11 @@ public class DashboardServiceImpl implements DashboardService {
         return sortedItems;
     }
 
+    /**
+     * 整数空值兜底为 0。
+     *
+     * @param value 原始整数值
+     */
     private Integer defaultInt(Integer value) {
         return value == null ? 0 : value;
     }

@@ -34,7 +34,7 @@ public interface MonitorTaskManageMapper {
     /**
      * 新增任务主数据。
      *
-     * @param task 任务实体，包含任务名称、时间、负责人等定义信息
+     * @param task 任务实体，包含任务名称、时间、产物和布局等定义信息
      * @return 影响行数
      */
     int insert(MonitorTaskDef task);

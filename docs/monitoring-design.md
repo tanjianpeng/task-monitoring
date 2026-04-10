@@ -97,12 +97,9 @@
 6. `plan_start_time` 计划开始时间
 7. `plan_end_time` 计划结束时间
 8. `default_cost_minutes` 默认耗时分钟数
-9. `avg_cost_minutes` 历史平均耗时分钟数
-10. 允许延迟分钟数不再落任务表，统一通过字典配置表按 `taskCode` 动态查询
-11. `frequency` 频率
-12. `is_flag` 是否大屏展示，0是，1否
-13. `pos_x`、`pos_y` 大屏坐标
-14. `remark` 备注
+9. `is_flag` 是否大屏展示，0是，1否
+10. `pos_x`、`pos_y` 大屏坐标
+11. `remark` 备注
 
 ### 5.3 `monitor_task_dependency` 任务依赖表
 
@@ -129,12 +126,14 @@
 7. `plan_end_time` 计划结束时间
 8. `actual_start_time` 实际开始时间
 9. `actual_end_time` 实际结束时间
-10. `current_cost_minutes` 当前耗时分钟数
-11. `predict_end_time` 预计结束时间
-12. `delayed_flag` 是否延迟
-13. `timeout_flag` 是否超时
-14. `result_status` 执行结果状态
-15. `is_flag` 是否隐藏，1否，0是
+10. `latest_end_time` 最晚结束时间
+11. `current_cost_minutes` 当前耗时分钟数
+12. `avg_cost_minutes` 历史平均耗时分钟数
+13. `batch_processing` 跑批周期，`D` 表示每日跑批，`M` 表示月末跑批，`NM` 表示非月末跑批
+14. `delayed_flag` 是否延迟
+15. `timeout_flag` 是否超时
+16. `result_status` 执行结果状态
+17. `is_flag` 是否隐藏，1否，0是
 
 ### 5.5 `monitor_task_log` 任务调用日志表
 

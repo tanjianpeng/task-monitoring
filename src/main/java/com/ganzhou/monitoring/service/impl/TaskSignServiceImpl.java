@@ -40,6 +40,11 @@ public class TaskSignServiceImpl implements TaskSignService {
      */
     private static final DateTimeFormatter REQUEST_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
+    /**
+     * 校验外部系统请求签名。
+     *
+     * @param request 外部系统上报请求报文
+     */
     @Override
     public void verifySign(TaskReportRequest request) {
         String signKey = taskRuntimeConfigService.querySignKeyByTaskCode(request.getTaskCode());
@@ -60,6 +65,8 @@ public class TaskSignServiceImpl implements TaskSignService {
 
     /**
      * 将动作统一转成小写，避免外部系统大小写差异影响验签。
+     *
+     * @param status 外部系统上报的动作状态
      */
     private String normalizeStatus(String status) {
         return status == null ? "" : status.trim().toLowerCase(Locale.ROOT);
@@ -67,6 +74,8 @@ public class TaskSignServiceImpl implements TaskSignService {
 
     /**
      * 计算 MD5 十六进制字符串。
+     *
+     * @param value 待加密字符串
      */
     private String md5Hex(String value) {
         try {

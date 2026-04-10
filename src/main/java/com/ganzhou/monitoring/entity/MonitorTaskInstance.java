@@ -5,7 +5,6 @@ import java.time.LocalDateTime;
 import jakarta.persistence.Column;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import jakarta.persistence.Transient;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -84,15 +83,10 @@ public class MonitorTaskInstance {
     @ApiModelProperty(name = "avgCostMinutes", value = "历史平均耗时(分钟)")
     private Integer avgCostMinutes;
 
-    /** 频率。 */
-    @Column(name = "frequency", length = 1)
-    @ApiModelProperty(name = "frequency", value = "频率，平日D，月底M")
-    private String frequency;
-
-    /** 预计结束时间。 */
-    @Column(name = "predict_end_time")
-    @ApiModelProperty(name = "predictEndTime", value = "预计结束时间")
-    private LocalDateTime predictEndTime;
+    /** 最晚结束时间。 */
+    @Column(name = "latest_end_time")
+    @ApiModelProperty(name = "latestEndTime", value = "最晚结束时间")
+    private LocalDateTime latestEndTime;
 
     /** 是否延迟。 */
     @Column(name = "delayed_flag", nullable = false)
@@ -113,11 +107,6 @@ public class MonitorTaskInstance {
     @Column(name = "is_flag", length = 1, nullable = false)
     @ApiModelProperty(name = "isFlag", value = "是否展示，1否，0是")
     private String isFlag;
-
-    /** 当前状态，仅查询时计算。 */
-    @Transient
-    @ApiModelProperty(name = "currentStatus", value = "当前状态")
-    private String currentStatus;
 
     /** 创建时间。 */
     @Column(name = "created_time")

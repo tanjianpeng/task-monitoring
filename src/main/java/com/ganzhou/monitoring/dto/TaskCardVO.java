@@ -32,12 +32,6 @@ public class TaskCardVO {
     /** 系统名称。 */
     private String systemName;
 
-    /** 负责人。 */
-    private String ownerName;
-
-    /** 监督人。 */
-    private String supervisorName;
-
     /** 前置依赖产物。 */
     private String preRequisiteProd;
 
@@ -53,8 +47,11 @@ public class TaskCardVO {
     /** 默认耗时，单位分钟。 */
     private Integer defaultCostMinutes;
 
-    /** 频率。 */
-    private String frequency;
+    /** 跑批周期。 */
+    private String batchProcessing;
+
+    /** 是否关键路径。 */
+    private String isPath;
 
     /** 任务启停状态。 */
     private String taskIsFlag;
@@ -83,8 +80,8 @@ public class TaskCardVO {
     /** 历史平均耗时，单位秒。 */
     private Integer avgCostSeconds;
 
-    /** 预计结束时间。 */
-    private LocalDateTime predictEndTime;
+    /** 最晚结束时间。 */
+    private LocalDateTime latestEndTime;
 
     /** 是否延迟。 */
     private Integer delayedFlag;

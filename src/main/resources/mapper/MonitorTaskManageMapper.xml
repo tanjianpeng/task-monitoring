@@ -12,13 +12,13 @@
         select task_code,
                task_name,
                system_code,
-               owner_name,
-               supervisor_name,
                pre_requisite_prod,
                the_batch_prod,
                plan_start_time,
                plan_end_time,
                default_cost_minutes,
+               batch_processing,
+               is_path,
                pos_x,
                pos_y,
                is_flag,
@@ -39,13 +39,13 @@
         select task_code,
                task_name,
                system_code,
-               owner_name,
-               supervisor_name,
                pre_requisite_prod,
                the_batch_prod,
                plan_start_time,
                plan_end_time,
                default_cost_minutes,
+               batch_processing,
+               is_path,
                pos_x,
                pos_y,
                is_flag,
@@ -65,19 +65,21 @@
         2. taskName：任务名称。
         3. systemCode：所属系统编码。
         4. planStartTime、planEndTime：计划时间。
-        5. 其余字段：负责人、备注、布局等扩展属性。
+        5. batchProcessing：跑批周期，D:每日 M:月末 NM:非月末。
+        6. isPath：是否关键路径，0是，1否。
+        7. 其余字段：产物、备注、布局等扩展属性。
     -->
     <insert id="insert" parameterType="MonitorTaskDef">
         insert into monitor_task (
-            task_code, task_name, system_code, owner_name, supervisor_name,
+            task_code, task_name, system_code,
             pre_requisite_prod, the_batch_prod, plan_start_time, plan_end_time,
-            default_cost_minutes,
+            default_cost_minutes, batch_processing, is_path,
             pos_x, pos_y,
             is_flag, remark
         ) values (
-            #{taskCode}, #{taskName}, #{systemCode}, #{ownerName}, #{supervisorName},
+            #{taskCode}, #{taskName}, #{systemCode},
             #{preRequisiteProd}, #{theBatchProd}, #{planStartTime}, #{planEndTime},
-            #{defaultCostMinutes},
+            #{defaultCostMinutes}, #{batchProcessing}, #{isPath},
             #{posX}, #{posY},
             #{isFlag}, #{remark}
         )
@@ -94,13 +96,13 @@
         update monitor_task
         set task_name = #{taskName},
             system_code = #{systemCode},
-            owner_name = #{ownerName},
-            supervisor_name = #{supervisorName},
             pre_requisite_prod = #{preRequisiteProd},
             the_batch_prod = #{theBatchProd},
             plan_start_time = #{planStartTime},
             plan_end_time = #{planEndTime},
             default_cost_minutes = #{defaultCostMinutes},
+            batch_processing = #{batchProcessing},
+            is_path = #{isPath},
             pos_x = #{posX},
             pos_y = #{posY},
             is_flag = #{isFlag},

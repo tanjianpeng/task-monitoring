@@ -25,6 +25,9 @@ public class GlobalExceptionHandler {
     /**
      * 处理业务异常。
      * 这类异常通常是服务层主动抛出的可预期错误。
+     *
+     * @param ex 业务异常对象
+     * @param request 当前 HTTP 请求
      */
     @ExceptionHandler(BusinessException.class)
     public ResultDto<Void> handleBusinessException(BusinessException ex, HttpServletRequest request) {
@@ -34,6 +37,9 @@ public class GlobalExceptionHandler {
     /**
      * 处理参数校验异常。
      * 适用于 @Valid + RequestBody 方式的对象校验。
+     *
+     * @param ex 参数校验异常对象
+     * @param request 当前 HTTP 请求
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResultDto<Void> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
@@ -49,6 +55,9 @@ public class GlobalExceptionHandler {
     /**
      * 处理表单绑定异常。
      * 适用于 query 参数、path 参数等绑定失败的场景。
+     *
+     * @param ex 绑定异常对象
+     * @param request 当前 HTTP 请求
      */
     @ExceptionHandler(BindException.class)
     public ResultDto<Void> handleBindException(BindException ex, HttpServletRequest request) {
@@ -63,6 +72,9 @@ public class GlobalExceptionHandler {
     /**
      * 处理约束校验异常。
      * 适用于单个参数上的约束校验错误。
+     *
+     * @param ex 约束校验异常对象
+     * @param request 当前 HTTP 请求
      */
     @ExceptionHandler(ConstraintViolationException.class)
     public ResultDto<Void> handleConstraintViolation(ConstraintViolationException ex,
@@ -73,6 +85,9 @@ public class GlobalExceptionHandler {
     /**
      * 处理请求体格式错误。
      * 例如 JSON 格式错误、日期格式转换失败等。
+     *
+     * @param ex 请求体反序列化异常对象
+     * @param request 当前 HTTP 请求
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResultDto<Void> handleHttpMessageNotReadable(HttpMessageNotReadableException ex,
@@ -83,6 +98,9 @@ public class GlobalExceptionHandler {
     /**
      * 处理非法参数异常。
      * 一般由代码中的主动校验抛出。
+     *
+     * @param ex 非法参数异常对象
+     * @param request 当前 HTTP 请求
      */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResultDto<Void> handleIllegalArgumentException(IllegalArgumentException ex,
@@ -93,6 +111,9 @@ public class GlobalExceptionHandler {
     /**
      * 兜底处理未知异常。
      * 防止异常直接抛到前端，影响页面体验。
+     *
+     * @param ex 未知异常对象
+     * @param request 当前 HTTP 请求
      */
     @ExceptionHandler(Exception.class)
     public ResultDto<Void> handleException(Exception ex, HttpServletRequest request) {
@@ -101,6 +122,8 @@ public class GlobalExceptionHandler {
 
     /**
      * 拼接字段错误信息。
+     *
+     * @param error 字段校验错误对象
      */
     private String formatFieldError(FieldError error) {
         return error.getField() + ":" + error.getDefaultMessage();
