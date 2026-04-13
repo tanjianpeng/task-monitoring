@@ -50,16 +50,10 @@ public class BatchMonitoringController {
      */
     @PostMapping("/monitor/task/report")
     public ResultDto<String> report(@RequestBody TaskReportRequest request) {
-        try {
-            validateExternalRequest(request.getStatus(), request);
-            taskSignService.verifySign(request);
-            Integer runNo = monitoringService.handleTaskAction(request.getStatus(), request);
-            return ResultDto.success(String.valueOf(runNo));
-        } catch (BusinessException ex) {
-            return ResultDto.fail(ex.getMessage());
-        } catch (Exception ex) {
-            return ResultDto.fail("系统异常，请联系管理员");
-        }
+        validateExternalRequest(request.getStatus(), request);
+        taskSignService.verifySign(request);
+        Integer runNo = monitoringService.handleTaskAction(request.getStatus(), request);
+        return ResultDto.success(String.valueOf(runNo));
     }
 
     /**

@@ -33,6 +33,15 @@ public interface MonitorTaskDependencyManageMapper {
     int deleteByTaskCode(@Param("taskCode") String taskCode);
 
     /**
+     * 按任务编码删除与该任务相关的全部依赖关系。
+     * 既删除“当前任务依赖别人”的记录，也删除“别人依赖当前任务”的记录。
+     *
+     * @param taskCode 任务编码
+     * @return 影响行数
+     */
+    int deleteRelatedByTaskCode(@Param("taskCode") String taskCode);
+
+    /**
      * 批量插入任务依赖关系。
      *
      * @param list 依赖关系列表，每条数据表示一个前置任务与当前任务的关系

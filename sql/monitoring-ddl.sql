@@ -1,3 +1,13 @@
+DROP TABLE IF EXISTS monitor_task_log;
+
+DROP TABLE IF EXISTS monitor_task_instance;
+
+DROP TABLE IF EXISTS monitor_task_dependency;
+
+DROP TABLE IF EXISTS monitor_task;
+
+DROP TABLE IF EXISTS monitor_system;
+
 CREATE TABLE monitor_system (
     system_code VARCHAR(64) NOT NULL COMMENT '系统编码',
     system_name VARCHAR(128) NOT NULL COMMENT '系统名称',
@@ -54,12 +64,12 @@ CREATE TABLE monitor_task_instance (
     latest_end_time DATETIME COMMENT '最晚结束时间',
     current_cost_minutes INT DEFAULT 0 COMMENT '当前耗时，单位分钟',
     avg_cost_minutes INT DEFAULT 0 COMMENT '历史平均耗时(单位分钟)',
-    delayed_flag INTEGER(1) NOT NULL DEFAULT '0' COMMENT '是否延迟，1是，0否',
-    timeout_flag INTEGER(1) NOT NULL DEFAULT '0' COMMENT '是否超时，1是，0否',
+    delayed_flag INT NOT NULL DEFAULT 0 COMMENT '是否延迟，1是，0否',
+    timeout_flag INT NOT NULL DEFAULT 0 COMMENT '是否超时，1是，0否',
     result_status VARCHAR(32) COMMENT '执行结果状态',
     is_flag VARCHAR(1) NOT NULL DEFAULT '0' COMMENT '是否展示，1否，0是',
-    created_time DATETIME COMMENT '创建时间',
-    updated_time DATETIME COMMENT '更新时间',
+    created_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (id)
 ) COMMENT='任务实例表';
 

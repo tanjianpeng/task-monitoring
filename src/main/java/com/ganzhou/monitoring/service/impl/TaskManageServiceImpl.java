@@ -113,7 +113,7 @@ public class TaskManageServiceImpl implements TaskManageService {
     @Transactional(rollbackFor = Exception.class)
     public void deleteTask(String taskCode) {
         try {
-            dependencyManageMapper.deleteByTaskCode(taskCode);
+            dependencyManageMapper.deleteRelatedByTaskCode(taskCode);
             taskManageMapper.deleteByCode(taskCode);
         } catch (RuntimeException ex) {
             log.error("删除任务及依赖关系异常，taskCode={}", taskCode, ex);

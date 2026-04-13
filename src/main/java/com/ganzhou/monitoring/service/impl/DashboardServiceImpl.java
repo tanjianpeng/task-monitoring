@@ -81,7 +81,7 @@ public class DashboardServiceImpl implements DashboardService {
             List<TaskCardVO> taskCards = dashboardMapper.selectTaskCards(formatBizDate, monthEndView);
             List<LinkVO> links = dashboardMapper.selectLinks(monthEndView);
             TaskStatusDataVO result = new TaskStatusDataVO();
-            result.setTaskList(buildTaskItems(taskCards, links));
+            result.setTaskList(buildTaskItems(bizDate, taskCards, links));
             result.setDependencyNodeList(links);
             return result;
         } catch (RuntimeException ex) {
@@ -115,11 +115,11 @@ public class DashboardServiceImpl implements DashboardService {
      * 将任务卡片组装成任务列表。
      * 任务节点和依赖连线已拆分成两个 list，方便前端分别渲染节点和箭头。
      *
+     * @param bizDate 当前查询使用的业务日期
      * @param taskCards 任务卡片原始数据列表
      * @param links 任务依赖连线列表
      */
-    private List<TaskDashboardItemVO> buildTaskItems(List<TaskCardVO> taskCards, List<LinkVO> links) {
-        LocalDate dashboardBizDate = resolveDashboardBizDate();
+    private List<TaskDashboardItemVO> buildTaskItems(LocalDate bizDate, List<TaskCardVO> taskCards, List<LinkVO> links) {
         Map<String, TaskDashboardItemVO> taskItemMap = new LinkedHashMap<>();
         for (TaskCardVO card : taskCards) {
             TaskDashboardItemVO item = new TaskDashboardItemVO();
@@ -144,7 +144,7 @@ public class DashboardServiceImpl implements DashboardService {
             item.setActualStartTime(formatClockTime(card.getActualStartTime()));
             item.setActualEndTime(formatClockTime(card.getActualEndTime()));
             item.setCurrentCostMinutes(formatCurrentCost(card));
-            item.setAvgCostMinutes(formatAverageCost(dashboardBizDate, card.getTaskCode(), card.getDefaultCostMinutes()));
+            item.setAvgCostMinutes(formatAverageCost(bizDate, card.getTaskCode(), card.getDefaultCostMinutes()));
             item.setLatestEndTime(card.getLatestEndTime());
             item.setDelayedFlag(card.getDelayedFlag());
             item.setTimeoutFlag(card.getTimeoutFlag());
