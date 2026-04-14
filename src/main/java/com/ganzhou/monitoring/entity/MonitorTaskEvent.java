@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 
 import io.swagger.annotations.ApiModel;
@@ -70,8 +69,7 @@ public class MonitorTaskEvent {
     private String resultStatus;
 
     /** 请求报文。 */
-    @Lob
-    @Column(name = "request_json")
+    @Column(name = "request_json", columnDefinition = "TEXT")
     @ApiModelProperty(name = "requestJson", value = "请求报文")
     private String requestJson;
 

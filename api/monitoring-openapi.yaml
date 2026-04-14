@@ -514,13 +514,16 @@ components:
           type: string
         planStartTime:
           type: string
-          format: date-time
+          format: time
+          description: 计划开始时间，格式 HH:mm:ss
         latestStartTime:
           type: string
-          format: date-time
+          format: time
+          description: 最晚开始时间，格式 HH:mm:ss
         planEndTime:
           type: string
-          format: date-time
+          format: time
+          description: 计划结束时间，格式 HH:mm:ss
         actualStartTime:
           type: string
           description: 实际开始时间，格式 HH:mm:ss
@@ -538,7 +541,8 @@ components:
           description: 历史平均耗时，格式 mm:ss；平日按往前 30 个非月底业务日统计，月底按往前 6 个自然月底业务日统计
         latestEndTime:
           type: string
-          format: date-time
+          format: time
+          description: 最晚结束时间，格式 HH:mm:ss
           nullable: true
         delayedFlag:
           type: integer
@@ -633,10 +637,12 @@ components:
           type: string
         planStartTime:
           type: string
-          format: date-time
+          format: time
+          description: 计划开始时间，格式 HH:mm:ss
         planEndTime:
           type: string
-          format: date-time
+          format: time
+          description: 计划结束时间，格式 HH:mm:ss
         defaultCostMinutes:
           type: integer
         posX:
@@ -689,10 +695,12 @@ components:
           type: string
         planStartTime:
           type: string
-          format: date-time
+          format: time
+          description: 计划开始时间，格式 HH:mm:ss
         planEndTime:
           type: string
-          format: date-time
+          format: time
+          description: 计划结束时间，格式 HH:mm:ss
         defaultCostMinutes:
           type: integer
         posX:

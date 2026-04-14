@@ -88,9 +88,10 @@ public class ControllerLogAspect {
      */
     private String resolveRequestUri() {
         RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
-        if (!(requestAttributes instanceof ServletRequestAttributes servletRequestAttributes)) {
+        if (!(requestAttributes instanceof ServletRequestAttributes)) {
             return "unknown";
         }
+        ServletRequestAttributes servletRequestAttributes = (ServletRequestAttributes) requestAttributes;
         HttpServletRequest request = servletRequestAttributes.getRequest();
         return request == null ? "unknown" : request.getRequestURI();
     }

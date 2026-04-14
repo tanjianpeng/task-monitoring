@@ -1,6 +1,6 @@
 package com.ganzhou.monitoring.dto;
 
-import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 import lombok.Data;
 
@@ -60,19 +60,19 @@ public class TaskCardVO {
     private String remark;
 
     /** 计划开始时间。 */
-    private LocalDateTime planStartTime;
+    private LocalTime planStartTime;
 
     /** 最晚开始时间。 */
-    private LocalDateTime latestStartTime;
+    private LocalTime latestStartTime;
 
     /** 计划结束时间。 */
-    private LocalDateTime planEndTime;
+    private LocalTime planEndTime;
 
     /** 实际开始时间。 */
-    private LocalDateTime actualStartTime;
+    private LocalTime actualStartTime;
 
     /** 实际结束时间。 */
-    private LocalDateTime actualEndTime;
+    private LocalTime actualEndTime;
 
     /** 当前耗时，单位秒。 */
     private Integer currentCostSeconds;
@@ -81,7 +81,7 @@ public class TaskCardVO {
     private Integer avgCostSeconds;
 
     /** 最晚结束时间。 */
-    private LocalDateTime latestEndTime;
+    private LocalTime latestEndTime;
 
     /** 是否延迟。 */
     private Integer delayedFlag;

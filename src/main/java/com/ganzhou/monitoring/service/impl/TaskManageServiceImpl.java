@@ -1,6 +1,9 @@
 package com.ganzhou.monitoring.service.impl;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -35,7 +38,8 @@ public class TaskManageServiceImpl implements TaskManageService {
     /**
      * 大屏箭头方向允许值。
      */
-    private static final Set<String> ALLOWED_DIRECTIONS = Set.of("TOP", "BOTTOM", "LEFT", "RIGHT");
+    private static final Set<String> ALLOWED_DIRECTIONS =
+            Collections.unmodifiableSet(new HashSet<String>(Arrays.asList("TOP", "BOTTOM", "LEFT", "RIGHT")));
 
     private final MonitorTaskManageMapper taskManageMapper;
     private final MonitorTaskDependencyManageMapper dependencyManageMapper;

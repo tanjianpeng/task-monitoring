@@ -77,13 +77,19 @@ public class MonitoringServiceImpl implements MonitoringService {
     public Integer handleTaskAction(String action, TaskReportRequest request) {
         try {
             String normalizedAction = normalizeAction(action, request);
-            return switch (normalizedAction) {
-                case "start" -> handleStart(request);
-                case "stop" -> handleStop(request);
-                case "restart" -> handleRestart(request);
-                case "fail" -> handleFail(request);
-                default -> throw new BusinessException("不支持的动作类型: " + normalizedAction);
-            };
+            if ("start".equals(normalizedAction)) {
+                return handleStart(request);
+            }
+            if ("stop".equals(normalizedAction)) {
+                return handleStop(request);
+            }
+            if ("restart".equals(normalizedAction)) {
+                return handleRestart(request);
+            }
+            if ("fail".equals(normalizedAction)) {
+                return handleFail(request);
+            }
+            throw new BusinessException("不支持的动作类型: " + normalizedAction);
         } catch (RuntimeException ex) {
             log.error("处理任务动作异常，action={}, taskCode={}, bizDate={}, runNo={}",
                     action,
@@ -311,13 +317,13 @@ public class MonitoringServiceImpl implements MonitoringService {
      * @param requestTime 请求到达时间
      */
     private void applyStart(MonitorTaskInstance instance, TaskReportRequest request, LocalDateTime requestTime) {
-        instance.setActualStartTime(request.getStartTime());
+        instance.setActualStartTime(toLocalTime(request.getStartTime()));
         instance.setActualEndTime(null);
         instance.setCurrentCostMinutes(null);
         instance.setResultStatus(TaskResultStatusEnum.RUNNING.getCode());
         if (instance.getLatestStartTime() != null
                 && request.getStartTime() != null
-                && request.getStartTime().isAfter(instance.getLatestStartTime())) {
+                && toLocalTime(request.getStartTime()).isAfter(instance.getLatestStartTime())) {
             instance.setDelayedFlag(1);
             instance.setResultStatus(TaskResultStatusEnum.DELAYED.getCode());
         } else {
@@ -340,11 +346,11 @@ public class MonitoringServiceImpl implements MonitoringService {
     private void applyStop(MonitorTaskInstance instance, MonitorTaskDef taskDef, TaskResultStatusEnum computedResultStatus,
                            TaskReportRequest request, LocalDateTime requestTime) {
         if (instance.getActualStartTime() == null && request.getStartTime() != null) {
-            instance.setActualStartTime(request.getStartTime());
+            instance.setActualStartTime(toLocalTime(request.getStartTime()));
         }
         refreshPlanFields(instance, taskDef, request.getBizDate());
-        LocalDateTime originalLatestEndTime = instance.getLatestEndTime();
-        instance.setActualEndTime(request.getEndTime());
+        LocalTime originalLatestEndTime = instance.getLatestEndTime();
+        instance.setActualEndTime(toLocalTime(request.getEndTime()));
         fillCost(instance, request);
         if (TaskResultStatusEnum.SUCCESS == computedResultStatus) {
             instance.setResultStatus(TaskResultStatusEnum.SUCCESS.getCode());
@@ -375,7 +381,7 @@ public class MonitoringServiceImpl implements MonitoringService {
      */
     private void fillCost(MonitorTaskInstance instance, TaskReportRequest request) {
         if (instance.getActualStartTime() != null && instance.getActualEndTime() != null) {
-            long minutes = Duration.between(instance.getActualStartTime(), instance.getActualEndTime()).toMinutes();
+            long minutes = calculateMinutesBetween(instance.getActualStartTime(), instance.getActualEndTime());
             instance.setCurrentCostMinutes((int) minutes);
             return;
         }
@@ -397,7 +403,7 @@ public class MonitoringServiceImpl implements MonitoringService {
      * @param requestTime 请求到达时间
      */
     private void markFlags(MonitorTaskInstance instance, LocalDateTime requestTime) {
-        LocalDateTime current = requestTime == null ? LocalDateTime.now() : requestTime;
+        LocalTime current = toLocalTime(requestTime == null ? LocalDateTime.now() : requestTime);
         if (instance.getActualEndTime() != null) {
             instance.setCurrentCostMinutes(resolveCurrentCostMinutes(instance, current));
         } else if (instance.getActualStartTime() == null) {
@@ -470,7 +476,7 @@ public class MonitoringServiceImpl implements MonitoringService {
      * @param taskDef 任务定义实体
      * @param planStartTime 计划开始时间
      */
-    private LocalDateTime resolveLatestStartTime(MonitorTaskDef taskDef, LocalDateTime planStartTime) {
+    private LocalTime resolveLatestStartTime(MonitorTaskDef taskDef, LocalTime planStartTime) {
         if (planStartTime == null) {
             return null;
         }
@@ -488,7 +494,7 @@ public class MonitoringServiceImpl implements MonitoringService {
      * @param taskDef 任务定义实体
      * @param planEndTime 计划结束时间
      */
-    private LocalDateTime resolveLatestEndTime(MonitorTaskDef taskDef, LocalDateTime planEndTime) {
+    private LocalTime resolveLatestEndTime(MonitorTaskDef taskDef, LocalTime planEndTime) {
         if (planEndTime == null) {
             return null;
         }
@@ -582,17 +588,16 @@ public class MonitoringServiceImpl implements MonitoringService {
 
     /**
      * 将任务定义中的时间模板折算到指定业务日期。
-     * 如果任务定义本身已经带了目标日期，则直接保留时分秒并覆盖到业务日期上。
+     * 任务表中的计划开始/结束时间只保存 HH:mm:ss，这里统一拼接到具体业务日期上。
      *
      * @param bizDate 业务日期
      * @param template 任务定义中的时间模板
      */
-    private LocalDateTime resolvePlanDateTime(LocalDate bizDate, LocalDateTime template) {
-        if (bizDate == null || template == null) {
-            return template;
+    private LocalTime resolvePlanDateTime(LocalDate bizDate, LocalTime template) {
+        if (template == null) {
+            return null;
         }
-        LocalTime time = template.toLocalTime();
-        return LocalDateTime.of(bizDate, time);
+        return template;
     }
 
     /**
@@ -627,12 +632,19 @@ public class MonitoringServiceImpl implements MonitoringService {
             throw new BusinessException("任务动作不能为空");
         }
         String normalized = raw.trim().toLowerCase(Locale.ROOT);
-        return switch (normalized) {
-            case "begin" -> "start";
-            case "end" -> "stop";
-            case "start", "stop", "restart", "fail" -> normalized;
-            default -> normalized;
-        };
+        if ("begin".equals(normalized)) {
+            return "start";
+        }
+        if ("end".equals(normalized)) {
+            return "stop";
+        }
+        if ("start".equals(normalized)
+                || "stop".equals(normalized)
+                || "restart".equals(normalized)
+                || "fail".equals(normalized)) {
+            return normalized;
+        }
+        return normalized;
     }
 
     /**
@@ -664,16 +676,43 @@ public class MonitoringServiceImpl implements MonitoringService {
      * @param instance 任务实例
      * @param current 当前时间
      */
-    private Integer resolveCurrentCostMinutes(MonitorTaskInstance instance, LocalDateTime current) {
+    private Integer resolveCurrentCostMinutes(MonitorTaskInstance instance, LocalTime current) {
         if (instance.getActualStartTime() == null) {
             return 0;
         }
-        LocalDateTime endTime = instance.getActualEndTime() == null ? null : instance.getActualEndTime();
+        LocalTime endTime = instance.getActualEndTime() == null ? null : instance.getActualEndTime();
         if (endTime == null) {
             return 0;
         }
-        long minutes = Duration.between(instance.getActualStartTime(), endTime).toMinutes();
+        long minutes = calculateMinutesBetween(instance.getActualStartTime(), endTime);
         return (int) Math.max(minutes, 0);
+    }
+
+    /**
+     * 将日期时间转换为纯时间。
+     *
+     * @param value 日期时间
+     */
+    private LocalTime toLocalTime(LocalDateTime value) {
+        return value == null ? null : value.toLocalTime();
+    }
+
+    /**
+     * 计算两个时间之间的分钟差。
+     * 若结束时间早于开始时间，则按跨天到次日处理。
+     *
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     */
+    private long calculateMinutesBetween(LocalTime startTime, LocalTime endTime) {
+        if (startTime == null || endTime == null) {
+            return 0L;
+        }
+        long minutes = Duration.between(startTime, endTime).toMinutes();
+        if (minutes >= 0) {
+            return minutes;
+        }
+        return Duration.between(startTime, endTime.plusHours(24)).toMinutes();
     }
 
     /**

@@ -9,7 +9,7 @@
 1. 接口前缀：`/api`
 2. 返回结构统一为 `ResultDto<T>`
 3. `code = "0000"` 表示成功
-4. 时间字段格式统一为 `yyyy-MM-dd HH:mm:ss`
+4. 任务计划/实例时间字段统一为 `HH:mm:ss`，业务日期字段单独通过 `bizDate` 返回
 5. 三个本地查询接口的业务日期都由后端优先取实例表最新一条 `bizDate`，实例表为空时回退到昨天日期 `yyyy-MM-dd`
 
 ---
@@ -188,14 +188,14 @@
 18. `data.taskList[].taskIsFlag`：任务表中的是否大屏展示字段，0是，1否
 19. `data.taskList[].remark`：任务备注
 20. `data.taskList[].resultStatus`：当前运行结果状态；未回传开始时间为 `NOTSTART`，开始但未超过最晚开始时间为 `RUNNING`，开始晚于最晚开始时间或执行中超过预计结束时间为 `DELAYED`
-21. `data.taskList[].planStartTime`：计划开始时间
-22. `data.taskList[].latestStartTime`：最晚开始时间，允许延迟分钟数由后端按任务编码查询后计算
-23. `data.taskList[].planEndTime`：计划结束时间
+21. `data.taskList[].planStartTime`：计划开始时间，格式 `HH:mm:ss`
+22. `data.taskList[].latestStartTime`：最晚开始时间，格式 `HH:mm:ss`，允许延迟分钟数由后端按任务编码查询后计算
+23. `data.taskList[].planEndTime`：计划结束时间，格式 `HH:mm:ss`
 24. `data.taskList[].actualStartTime`：实际开始时间，格式 `HH:mm:ss`
 25. `data.taskList[].actualEndTime`：实际结束时间，格式 `HH:mm:ss`
 26. `data.taskList[].currentCostMinutes`：当前耗时，格式 `mm:ss`；结束任务按“结束回调时间 - 开始回调时间”计算，待执行任务为空
 27. `data.taskList[].avgCostMinutes`：历史平均耗时，格式 `mm:ss`；平日按往前 30 个非月底业务日统计，月底按往前 6 个自然月底业务日统计
-28. `data.taskList[].latestEndTime`：最晚结束时间；未开始时按计划结束时间加允许延迟分钟数计算，开始后按开始时间加历史平均耗时再加允许延迟分钟数计算
+28. `data.taskList[].latestEndTime`：最晚结束时间，格式 `HH:mm:ss`；未开始时按计划结束时间加允许延迟分钟数计算，开始后按开始时间加历史平均耗时再加允许延迟分钟数计算
 29. `data.taskList[].delayedFlag`：是否延迟，1是，0否；包含开始时间超过最晚开始时间、执行中超过预计结束时间、已结束但晚于预计结束时间
 30. `data.taskList[].timeoutFlag`：是否超过预计结束时间，1是，0否；该字段仅作为标记，结果状态统一并入 `DELAYED`
 31. `data.taskList[].resultStatusName`：执行结果状态中文说明，例如待执行、执行中、成功、失败、延迟
@@ -229,14 +229,14 @@
       "remark": "报表平台前置任务",
       "resultStatus": "SUCCESS",
       "resultStatusName": "成功",
-      "planStartTime": "2026-04-07 20:00:00",
-      "latestStartTime": "2026-04-07 20:10:00",
-      "planEndTime": "2026-04-07 20:20:00",
+      "planStartTime": "20:00:00",
+      "latestStartTime": "20:10:00",
+      "planEndTime": "20:20:00",
       "actualStartTime": "20:00:03",
       "actualEndTime": "20:15:26",
       "currentCostMinutes": "15:23",
       "avgCostMinutes": "18:00",
-      "latestEndTime": "2026-04-07 20:18:03",
+      "latestEndTime": "20:18:03",
       "delayedFlag": 0,
       "timeoutFlag": 0,
       "isFlag": "0"
@@ -258,14 +258,14 @@
       "remark": "核心日终主任务",
       "resultStatus": "RUNNING",
       "resultStatusName": "执行中",
-      "planStartTime": "2026-04-07 21:30:00",
-      "latestStartTime": "2026-04-07 21:40:00",
-      "planEndTime": "2026-04-07 22:05:00",
+      "planStartTime": "21:30:00",
+      "latestStartTime": "21:40:00",
+      "planEndTime": "22:05:00",
       "actualStartTime": "21:31:20",
       "actualEndTime": null,
       "currentCostMinutes": "22:00",
       "avgCostMinutes": "35:00",
-      "latestEndTime": "2026-04-07 22:06:20",
+      "latestEndTime": "22:06:20",
       "delayedFlag": 0,
       "timeoutFlag": 0,
       "isFlag": "0"
@@ -287,9 +287,9 @@
       "remark": "核算平台卸数子任务",
       "resultStatus": "NOTSTART",
       "resultStatusName": "待执行",
-      "planStartTime": "2026-04-07 22:10:00",
-      "latestStartTime": "2026-04-07 22:20:00",
-      "planEndTime": "2026-04-07 22:30:00",
+      "planStartTime": "22:10:00",
+      "latestStartTime": "22:20:00",
+      "planEndTime": "22:30:00",
       "actualStartTime": null,
       "actualEndTime": null,
       "currentCostMinutes": null,
@@ -316,9 +316,9 @@
       "remark": "新网贷接续任务",
       "resultStatus": "DELAYED",
       "resultStatusName": "延迟",
-      "planStartTime": "2026-04-07 22:35:00",
-      "latestStartTime": "2026-04-07 22:45:00",
-      "planEndTime": "2026-04-07 23:20:00",
+      "planStartTime": "22:35:00",
+      "latestStartTime": "22:45:00",
+      "planEndTime": "23:20:00",
       "actualStartTime": null,
       "actualEndTime": null,
       "currentCostMinutes": null,

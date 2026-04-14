@@ -1,6 +1,7 @@
 package com.ganzhou.monitoring.entity;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Id;
@@ -48,15 +49,15 @@ public class MonitorTaskDef {
     @ApiModelProperty(name = "theBatchProd", value = "本批处理任务产出物")
     private String theBatchProd;
 
-    /** 计划开始时间。 */
+    /** 计划开始时间，格式 HH:mm:ss。 */
     @Column(name = "plan_start_time", nullable = false)
-    @ApiModelProperty(name = "planStartTime", value = "计划开始时间")
-    private LocalDateTime planStartTime;
+    @ApiModelProperty(name = "planStartTime", value = "计划开始时间，格式 HH:mm:ss")
+    private LocalTime planStartTime;
 
-    /** 计划结束时间。 */
+    /** 计划结束时间，格式 HH:mm:ss。 */
     @Column(name = "plan_end_time", nullable = false)
-    @ApiModelProperty(name = "planEndTime", value = "计划结束时间")
-    private LocalDateTime planEndTime;
+    @ApiModelProperty(name = "planEndTime", value = "计划结束时间，格式 HH:mm:ss")
+    private LocalTime planEndTime;
 
     /** 预计耗时，单位分钟。 */
     @Column(name = "default_cost_minutes")

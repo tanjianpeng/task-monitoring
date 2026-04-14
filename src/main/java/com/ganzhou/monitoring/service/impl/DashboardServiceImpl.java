@@ -1,10 +1,10 @@
 package com.ganzhou.monitoring.service.impl;
 
+import com.ganzhou.monitoring.constant.TaskResultStatusEnum;
 import com.ganzhou.monitoring.dto.*;
 import com.ganzhou.monitoring.mapper.MonitorDashboardMapper;
 import com.ganzhou.monitoring.mapper.MonitorTaskInstanceMapper;
 import com.ganzhou.monitoring.service.DashboardService;
-import com.ganzhou.monitoring.constant.TaskResultStatusEnum;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.*;
@@ -138,14 +138,14 @@ public class DashboardServiceImpl implements DashboardService {
             item.setIsPath(card.getIsPath());
             item.setTaskIsFlag(card.getTaskIsFlag());
             item.setRemark(card.getRemark());
-            item.setPlanStartTime(card.getPlanStartTime());
-            item.setLatestStartTime(card.getLatestStartTime());
-            item.setPlanEndTime(card.getPlanEndTime());
+            item.setPlanStartTime(formatClockTime(card.getPlanStartTime()));
+            item.setLatestStartTime(formatClockTime(card.getLatestStartTime()));
+            item.setPlanEndTime(formatClockTime(card.getPlanEndTime()));
             item.setActualStartTime(formatClockTime(card.getActualStartTime()));
             item.setActualEndTime(formatClockTime(card.getActualEndTime()));
             item.setCurrentCostMinutes(formatCurrentCost(card));
             item.setAvgCostMinutes(formatAverageCost(bizDate, card.getTaskCode(), card.getDefaultCostMinutes()));
-            item.setLatestEndTime(card.getLatestEndTime());
+            item.setLatestEndTime(formatClockTime(card.getLatestEndTime()));
             item.setDelayedFlag(card.getDelayedFlag());
             item.setTimeoutFlag(card.getTimeoutFlag());
             item.setResultStatus(card.getResultStatus());
@@ -173,7 +173,7 @@ public class DashboardServiceImpl implements DashboardService {
      *
      * @param value 原始时间
      */
-    private String formatClockTime(LocalDateTime value) {
+    private String formatClockTime(LocalTime value) {
         return value == null ? null : value.format(CARD_TIME_FORMATTER);
     }
 

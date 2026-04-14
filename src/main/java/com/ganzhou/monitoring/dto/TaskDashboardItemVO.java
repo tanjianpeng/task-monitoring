@@ -1,7 +1,5 @@
 package com.ganzhou.monitoring.dto;
 
-import java.time.LocalDateTime;
-
 import lombok.Data;
 
 /**
@@ -59,14 +57,14 @@ public class TaskDashboardItemVO {
     /** 任务备注。 */
     private String remark;
 
-    /** 计划开始时间。 */
-    private LocalDateTime planStartTime;
+    /** 计划开始时间，格式 HH:mm:ss。 */
+    private String planStartTime;
 
-    /** 最晚开始时间。 */
-    private LocalDateTime latestStartTime;
+    /** 最晚开始时间，格式 HH:mm:ss。 */
+    private String latestStartTime;
 
-    /** 计划结束时间。 */
-    private LocalDateTime planEndTime;
+    /** 计划结束时间，格式 HH:mm:ss。 */
+    private String planEndTime;
 
     /** 实际开始时间，格式 HH:mm:ss。 */
     private String actualStartTime;
@@ -80,8 +78,8 @@ public class TaskDashboardItemVO {
     /** 历史平均耗时，格式 mm:ss。 */
     private String avgCostMinutes;
 
-    /** 最晚结束时间。 */
-    private LocalDateTime latestEndTime;
+    /** 最晚结束时间，格式 HH:mm:ss。 */
+    private String latestEndTime;
 
     /** 是否延迟。 */
     private Integer delayedFlag;

@@ -132,7 +132,7 @@
                case
                    when i.actual_end_time is not null and i.result_status = 'SUCCESS' then 'SUCCESS'
                    when i.actual_end_time is not null and i.result_status = 'FAILED' then 'FAILED'
-                   when i.actual_start_time is not null and i.actual_end_time is null and now() > i.latest_end_time then 'DELAYED'
+                   when i.actual_start_time is not null and i.actual_end_time is null and current_time() > i.latest_end_time then 'DELAYED'
                    when i.actual_start_time is not null and i.latest_start_time is not null and i.actual_start_time > i.latest_start_time then 'DELAYED'
                    when i.actual_start_time is not null and i.actual_end_time is null then 'RUNNING'
                    else 'NOTSTART'
@@ -147,13 +147,13 @@
                i.latest_end_time,
                case
                    when i.actual_start_time is not null and i.latest_start_time is not null and i.actual_start_time > i.latest_start_time then 1
-                   when i.actual_start_time is not null and i.actual_end_time is null and now() > i.latest_end_time then 1
+                   when i.actual_start_time is not null and i.actual_end_time is null and current_time() > i.latest_end_time then 1
                    when i.actual_end_time is not null and i.latest_end_time is not null and i.actual_end_time > i.latest_end_time then 1
                    when i.delayed_flag = 1 then 1
                    else 0
                    end as delayed_flag,
                case
-                   when i.actual_start_time is not null and i.actual_end_time is null and now() > i.latest_end_time then 1
+                   when i.actual_start_time is not null and i.actual_end_time is null and current_time() > i.latest_end_time then 1
                    when i.actual_end_time is not null and i.latest_end_time is not null and i.actual_end_time > i.latest_end_time then 1
                    when i.timeout_flag = 1 then 1
                    else 0

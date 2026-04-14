@@ -1,6 +1,8 @@
 package com.ganzhou.monitoring.dto;
 
-import java.time.LocalDateTime;
+import com.fasterxml.jackson.annotation.JsonFormat;
+
+import java.time.LocalTime;
 import java.util.List;
 
 import jakarta.validation.constraints.NotBlank;
@@ -36,13 +38,15 @@ public class TaskSaveRequest {
     /** 本批处理任务产出物。 */
     private String theBatchProd;
 
-    /** 计划开始时间。 */
+    /** 计划开始时间，格式 HH:mm:ss。 */
     @NotNull
-    private LocalDateTime planStartTime;
+    @JsonFormat(pattern = "HH:mm:ss")
+    private LocalTime planStartTime;
 
-    /** 计划结束时间。 */
+    /** 计划结束时间，格式 HH:mm:ss。 */
     @NotNull
-    private LocalDateTime planEndTime;
+    @JsonFormat(pattern = "HH:mm:ss")
+    private LocalTime planEndTime;
 
     /** 默认耗时分钟数。 */
     private Integer defaultCostMinutes;
