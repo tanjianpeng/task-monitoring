@@ -20,7 +20,7 @@ public interface MonitorTaskEventMapper {
     /**
      * 插入任务调用日志。
      *
-     * @param event 日志实体，记录外部系统本次 start/stop/restart/fail 调用内容
+     * @param event 日志实体，记录外部系统本次 start/end/restart/fail 调用内容
      * @return 影响行数
      */
     int insert(MonitorTaskEvent event);

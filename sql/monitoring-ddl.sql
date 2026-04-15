@@ -77,7 +77,7 @@ CREATE TABLE monitor_task_log (
     id VARCHAR(64) NOT NULL COMMENT '主键ID',
     request_id VARCHAR(64) COMMENT '请求流水号',
     request_url VARCHAR(200) NOT NULL COMMENT '调用URL',
-    request_status VARCHAR(32) NOT NULL COMMENT '动作状态 start/stop/restart/fail',
+    request_status VARCHAR(32) NOT NULL COMMENT '动作状态 start/end/restart/fail',
     system_code VARCHAR(64) NOT NULL COMMENT '所属系统编码',
     task_code VARCHAR(64) NOT NULL COMMENT '任务编码',
     biz_date VARCHAR(64) NOT NULL COMMENT '业务日期 YYYYMMDD',

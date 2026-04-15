@@ -6,7 +6,7 @@
 
     <!--
         插入任务调用日志。
-        用途：每次业务系统调用 start/stop/restart/fail 接口时，都落一条调用流水。
+        用途：每次业务系统调用 start/end/restart/fail 接口时，都落一条调用流水。
         入参：
         1. id：日志主键。
         2. requestId：请求流水号。

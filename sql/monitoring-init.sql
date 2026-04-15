@@ -72,8 +72,8 @@ insert into monitor_task_log
 values
     ('LOG001', 'REQ202604070001', '/api/monitor/task/report', 'start', 'RICP', 'RICP_BAT_01', '20260407', 0,
      '{"systemCode":"RICP","taskCode":"RICP_BAT_01","bizDate":"2026-04-07","status":"start"}', 'RUNNING'),
-    ('LOG002', 'REQ202604070002', '/api/monitor/task/report', 'stop', 'RICP', 'RICP_BAT_01', '20260407', 0,
-     '{"systemCode":"RICP","taskCode":"RICP_BAT_01","bizDate":"2026-04-07","status":"stop"}', 'SUCCESS'),
+    ('LOG002', 'REQ202604070002', '/api/monitor/task/report', 'end', 'RICP', 'RICP_BAT_01', '20260407', 0,
+     '{"systemCode":"RICP","taskCode":"RICP_BAT_01","bizDate":"2026-04-07","status":"end"}', 'SUCCESS'),
     ('LOG003', 'REQ202604070003', '/api/monitor/task/report', 'start', 'ACPL', 'ACPL_BAT_01', '20260407', 0,
      '{"systemCode":"ACPL","taskCode":"ACPL_BAT_01","bizDate":"2026-04-07","status":"start"}', 'RUNNING'),
     ('LOG004', 'REQ202604070004', '/api/monitor/task/report', 'fail', 'ACPL', 'ACPL_BAT_01', '20260407', 0,

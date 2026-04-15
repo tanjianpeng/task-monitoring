@@ -53,7 +53,7 @@
 1. 外部未回传开始时间时，为 `NOTSTART`。
 2. 收到 `start` 或 `restart` 后，若开始时间未超过最晚开始时间，为 `RUNNING`。
 3. 收到 `start` 或 `restart` 后，若开始时间超过最晚开始时间，为 `DELAYED`。
-4. 收到 `stop` 后，为 `SUCCESS`。
+4. 收到 `end` 后，为 `SUCCESS`。
 5. 收到 `fail` 后，为 `FAILED`。
 6. 已开始未结束且当前时间大于预计结束时间时，也归为 `DELAYED`。
 7. 已正常结束，但实际结束时间大于预计结束时间时，也记为延迟，状态仍保持 `SUCCESS` 或 `FAILED`，同时标记延迟。
@@ -143,7 +143,7 @@
 
 1. `request_id` 请求流水号
 2. `request_url` 调用地址
-3. `request_status` 请求动作状态，取值 `start`、`stop`、`restart`、`fail`
+3. `request_status` 请求动作状态，取值 `start`、`end`、`restart`、`fail`
 4. `system_code` 系统编码
 5. `task_code` 任务编码
 6. `biz_date` 业务日期
@@ -177,7 +177,7 @@
 `status` 字段说明如下：
 
 1. `start` 表示开始
-2. `stop` 表示成功结束
+2. `end` 表示成功结束
 3. `restart` 表示重跑开始
 4. `fail` 表示失败结束
 
@@ -264,7 +264,7 @@
 
 1. 谁调用上报接口，就更新谁对应的任务实例。
 2. 未调用前保持 `NOTSTART`。
-3. `stop` 直接视为成功。
+3. `end` 直接视为成功。
 4. `fail` 直接视为失败。
 5. `restart` 会累计重跑次数，并按开始时间与最晚开始时间比较后进入 `RUNNING` 或 `DELAYED`。
 

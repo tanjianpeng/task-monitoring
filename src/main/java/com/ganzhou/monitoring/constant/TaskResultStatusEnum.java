@@ -26,7 +26,7 @@ public enum TaskResultStatusEnum {
 
     /**
      * 运行中。
-     * 已收到 start 或 restart 回调，但尚未收到 stop 或 fail 回调。
+     * 已收到 start 或 restart 回调，但尚未收到 end 或 fail 回调。
      */
     RUNNING("RUNNING", "执行中"),
 

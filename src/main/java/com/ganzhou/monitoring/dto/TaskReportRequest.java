@@ -41,7 +41,7 @@ public class TaskReportRequest {
      * 一般指当前跑批归属的业务日，而不是接口调用日期。
      */
     @NotNull
-    @JsonFormat(pattern = "yyyy-MM-dd")
+    @JsonFormat(pattern = "yyyyMMdd")
     private LocalDate bizDate;
 
     /**
@@ -52,7 +52,7 @@ public class TaskReportRequest {
 
     /**
      * 本次上报状态。
-     * 支持 start、stop、restart、fail 四种取值。
+     * 支持 start、end、restart、fail 四种取值。
      */
     private String status;
 

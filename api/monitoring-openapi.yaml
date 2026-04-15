@@ -13,8 +13,8 @@ paths:
       summary: 外部系统统一上报任务状态
       description: |
         外部业务系统统一调用该接口上报任务状态。
-        `status` 仅支持 `start`、`stop`、`restart`、`fail` 四种取值。
-        其中 `stop` 表示任务成功结束，`fail` 表示任务失败结束。
+        `status` 仅支持 `start`、`end`、`restart`、`fail` 四种取值。
+        其中 `end` 表示任务成功结束，`fail` 表示任务失败结束。
       requestBody:
         required: true
         content:
@@ -434,19 +434,18 @@ components:
           example: HISPROD_BAT_01
         bizDate:
           type: string
-          format: date
-          description: 业务日期，格式 yyyy-MM-dd
-          example: '2025-11-26'
+          description: 业务日期，格式 yyyyMMdd
+          example: '20251126'
         runNo:
           type: integer
           default: 0
           description: 重跑次数，默认值为 0
         status:
           type: string
-          enum: [start, stop, restart, fail]
+          enum: [start, end, restart, fail]
           description: |
             本次上报状态。
-            start 表示开始，stop 表示成功结束，restart 表示重跑开始，fail 表示失败结束。
+            start 表示开始，end 表示成功结束，restart 表示重跑开始，fail 表示失败结束。
         startTime:
           type: string
           format: date-time

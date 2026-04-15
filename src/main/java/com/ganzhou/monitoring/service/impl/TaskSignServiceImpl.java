@@ -8,32 +8,23 @@ import java.util.Locale;
 
 import com.ganzhou.monitoring.common.BusinessException;
 import com.ganzhou.monitoring.dto.TaskReportRequest;
-import com.ganzhou.monitoring.service.TaskRuntimeConfigService;
 import com.ganzhou.monitoring.service.TaskSignService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * Description: 外部系统回调验签服务实现。 按“signKey + systemCode + taskCode + bizDate + status + requestTime”拼串后做 MD5。
+ * Description: 外部系统回调验签服务实现。 按“systemCode=xxx&taskCode=xxx&bizDate=xxx&status=xxx&requestTime=xxx”拼串后做 MD5。
  *
  * @author tanjianpeng
  * @time 2026-04-07 18:14:49
  * @version 1.0
  */
 @Service
-@RequiredArgsConstructor
 public class TaskSignServiceImpl implements TaskSignService {
-
-    /**
-     * 任务运行配置查询服务。
-     * 用于预留根据 taskCode 查询签名密钥的扩展能力。
-     */
-    private final TaskRuntimeConfigService taskRuntimeConfigService;
 
     /**
      * 业务日期格式。
      */
-    private static final DateTimeFormatter BIZ_DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final DateTimeFormatter BIZ_DATE_FORMATTER = DateTimeFormatter.BASIC_ISO_DATE;
 
     /**
      * 请求时间格式。
@@ -47,20 +38,28 @@ public class TaskSignServiceImpl implements TaskSignService {
      */
     @Override
     public void verifySign(TaskReportRequest request) {
-        String signKey = taskRuntimeConfigService.querySignKeyByTaskCode(request.getTaskCode());
-        if (signKey == null || signKey.isBlank()) {
-            throw new BusinessException("任务未配置验签密钥，请实现根据taskCode查询签名字段的方法");
-        }
-        String plainText = signKey
-                + request.getSystemCode()
-                + request.getTaskCode()
-                + request.getBizDate().format(BIZ_DATE_FORMATTER)
-                + normalizeStatus(request.getStatus())
-                + request.getRequestTime().format(REQUEST_TIME_FORMATTER);
+        String plainText = buildPlainText(request);
         String expected = md5Hex(plainText);
         if (!expected.equalsIgnoreCase(request.getSign())) {
             throw new BusinessException("sign验签失败");
         }
+    }
+
+    /**
+     * 按外部系统约定拼接参与验签的原文字符串。
+     * 固定顺序为 systemCode、taskCode、bizDate、status、requestTime。
+     *
+     * @param request 外部系统上报请求报文
+     */
+    private String buildPlainText(TaskReportRequest request) {
+        return new StringBuilder()
+                .append("systemCode=").append(defaultString(request.getSystemCode()))
+                .append("&taskCode=").append(defaultString(request.getTaskCode()))
+                .append("&bizDate=").append(request.getBizDate() == null ? "" : request.getBizDate().format(BIZ_DATE_FORMATTER))
+                .append("&status=").append(normalizeStatus(request.getStatus()))
+                .append("&requestTime=").append(request.getRequestTime() == null ? ""
+                        : request.getRequestTime().format(REQUEST_TIME_FORMATTER))
+                .toString();
     }
 
     /**
@@ -70,6 +69,15 @@ public class TaskSignServiceImpl implements TaskSignService {
      */
     private String normalizeStatus(String status) {
         return status == null ? "" : status.trim().toLowerCase(Locale.ROOT);
+    }
+
+    /**
+     * 空字符串保护。
+     *
+     * @param value 原始字符串
+     */
+    private String defaultString(String value) {
+        return value == null ? "" : value;
     }
 
     /**

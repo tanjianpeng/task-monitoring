@@ -80,8 +80,8 @@ public class MonitoringServiceImpl implements MonitoringService {
             if ("start".equals(normalizedAction)) {
                 return handleStart(request);
             }
-            if ("stop".equals(normalizedAction)) {
-                return handleStop(request);
+            if ("end".equals(normalizedAction)) {
+                return handleEnd(request);
             }
             if ("restart".equals(normalizedAction)) {
                 return handleRestart(request);
@@ -150,11 +150,11 @@ public class MonitoringServiceImpl implements MonitoringService {
 
     /**
      * 处理结束动作。
-     * 业务系统调用 stop 时，只实时更新当前任务自己的实例数据，并写入成功状态。
+     * 业务系统调用 end 时，只实时更新当前任务自己的实例数据，并写入成功状态。
      *
      * @param request 外部系统上报请求报文
      */
-    private Integer handleStop(TaskReportRequest request) {
+    private Integer handleEnd(TaskReportRequest request) {
         LocalDateTime requestTime = resolveRequestTime(request);
         if (request.getEndTime() == null) {
             request.setEndTime(requestTime);
@@ -163,7 +163,7 @@ public class MonitoringServiceImpl implements MonitoringService {
         MonitorTaskDef taskDef = validateTask(request);
         MonitorTaskInstance instance = getRequiredInstance(request);
         applyStop(instance, taskDef, TaskResultStatusEnum.SUCCESS, request, requestTime);
-        MonitorTaskEvent event = buildLog("stop", instance.getResultStatus(), request, REPORT_URL);
+        MonitorTaskEvent event = buildLog("end", instance.getResultStatus(), request, REPORT_URL);
         taskEventMapper.insert(event);
         taskInstanceMapper.updateById(instance);
         return runNo;
@@ -620,8 +620,8 @@ public class MonitoringServiceImpl implements MonitoringService {
 
     /**
      * 统一归一化动作类型。
-     * 兼容旧版 begin/end，也支持新版 start/stop/restart/fail。
-     * 其中 stop 固定表示成功结束，fail 固定表示失败结束。
+     * 兼容旧版 begin/stop，也支持新版 start/end/restart/fail。
+     * 其中 end 固定表示成功结束，fail 固定表示失败结束。
      *
      * @param action 接口动作类型
      * @param request 外部系统上报请求报文
@@ -635,11 +635,14 @@ public class MonitoringServiceImpl implements MonitoringService {
         if ("begin".equals(normalized)) {
             return "start";
         }
+        if ("stop".equals(normalized)) {
+            return "end";
+        }
         if ("end".equals(normalized)) {
-            return "stop";
+            return "end";
         }
         if ("start".equals(normalized)
-                || "stop".equals(normalized)
+                || "end".equals(normalized)
                 || "restart".equals(normalized)
                 || "fail".equals(normalized)) {
             return normalized;
