@@ -28,11 +28,6 @@ public class MonitorTaskEvent {
     @ApiModelProperty(name = "id", value = "主键ID")
     private String id;
 
-    /** 请求流水号。 */
-    @Column(name = "request_id", length = 64)
-    @ApiModelProperty(name = "requestId", value = "请求流水号")
-    private String requestId;
-
     /** 调用URL。 */
     @Column(name = "request_url", length = 200, nullable = false)
     @ApiModelProperty(name = "requestUrl", value = "调用URL")

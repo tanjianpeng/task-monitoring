@@ -68,15 +68,15 @@ values
      null, null, '21:20:00', 0, 20, 0, 0, 'NOTSTART', '0', now(), now());
 
 insert into monitor_task_log
-(id, request_id, request_url, request_status, system_code, task_code, biz_date, run_times, request_json, result_status)
+(id, request_url, request_status, system_code, task_code, biz_date, run_times, request_json, result_status)
 values
-    ('LOG001', 'REQ202604070001', '/api/monitor/task/report', 'start', 'RICP', 'RICP_BAT_01', '20260407', 0,
+    ('LOG001', '/api/monitor/task/report', 'start', 'RICP', 'RICP_BAT_01', '20260407', 0,
      '{"systemCode":"RICP","taskCode":"RICP_BAT_01","bizDate":"2026-04-07","status":"start"}', 'RUNNING'),
-    ('LOG002', 'REQ202604070002', '/api/monitor/task/report', 'end', 'RICP', 'RICP_BAT_01', '20260407', 0,
+    ('LOG002', '/api/monitor/task/report', 'end', 'RICP', 'RICP_BAT_01', '20260407', 0,
      '{"systemCode":"RICP","taskCode":"RICP_BAT_01","bizDate":"2026-04-07","status":"end"}', 'SUCCESS'),
-    ('LOG003', 'REQ202604070003', '/api/monitor/task/report', 'start', 'ACPL', 'ACPL_BAT_01', '20260407', 0,
+    ('LOG003', '/api/monitor/task/report', 'start', 'ACPL', 'ACPL_BAT_01', '20260407', 0,
      '{"systemCode":"ACPL","taskCode":"ACPL_BAT_01","bizDate":"2026-04-07","status":"start"}', 'RUNNING'),
-    ('LOG004', 'REQ202604070004', '/api/monitor/task/report', 'fail', 'ACPL', 'ACPL_BAT_01', '20260407', 0,
+    ('LOG004', '/api/monitor/task/report', 'fail', 'ACPL', 'ACPL_BAT_01', '20260407', 0,
      '{"systemCode":"ACPL","taskCode":"ACPL_BAT_01","bizDate":"2026-04-07","status":"fail"}', 'FAILED'),
-    ('LOG005', 'REQ202604070005', '/api/monitor/task/report', 'start', 'NWLS', 'NWLS_BAT_01', '20260407', 0,
+    ('LOG005', '/api/monitor/task/report', 'start', 'NWLS', 'NWLS_BAT_01', '20260407', 0,
      '{"systemCode":"NWLS","taskCode":"NWLS_BAT_01","bizDate":"2026-04-07","status":"start"}', 'RUNNING');

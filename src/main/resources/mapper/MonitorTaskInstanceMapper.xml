@@ -22,6 +22,19 @@
     </select>
 
     <!--
+        查询指定业务日期、任务编码下最新的一条任务实例。
+        用途：同一天同任务存在历史重复实例时，优先选择最后更新的一条作为当前实例。
+    -->
+    <select id="selectLatestByBizDateAndTaskCode" resultType="MonitorTaskInstance">
+        select *
+        from monitor_task_instance
+        where biz_date = #{bizDate}
+          and task_code = #{taskCode}
+        order by updated_time desc, id desc
+        limit 1
+    </select>
+
+    <!--
         新增任务实例。
         用途：每天 0 点预生成实例，或业务系统先上报时兜底补建实例。
         入参：
@@ -64,6 +77,18 @@
             updated_time = now()
         where id = #{id}
     </update>
+
+    <!--
+        删除同一天同任务下除目标实例外的其他记录。
+        用途：保证同业务日期同任务最终只保留一条实例。
+    -->
+    <delete id="deleteByBizDateAndTaskCodeExcludeId">
+        delete
+        from monitor_task_instance
+        where biz_date = #{bizDate}
+          and task_code = #{taskCode}
+          and id <> #{excludeId}
+    </delete>
 
     <!--
         按主键刷新实例计划信息。

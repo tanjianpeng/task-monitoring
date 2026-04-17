@@ -29,6 +29,16 @@ public interface MonitorTaskInstanceMapper {
                                                            @Param("runNo") Integer runNo);
 
     /**
+     * 查询指定业务日期与任务编码下最新一条实例。
+     *
+     * @param bizDate 业务日期，格式 yyyyMMdd
+     * @param taskCode 任务编码
+     * @return 最新实例，不存在时返回 null
+     */
+    MonitorTaskInstance selectLatestByBizDateAndTaskCode(@Param("bizDate") String bizDate,
+                                                         @Param("taskCode") String taskCode);
+
+    /**
      * 新增任务实例。
      *
      * @param instance 任务实例实体，包含计划时间、执行状态、耗时等快照数据
@@ -43,6 +53,18 @@ public interface MonitorTaskInstanceMapper {
      * @return 影响行数
      */
     int updateById(MonitorTaskInstance instance);
+
+    /**
+     * 删除指定业务日期与任务编码下除目标实例外的其余记录。
+     *
+     * @param bizDate 业务日期，格式 yyyyMMdd
+     * @param taskCode 任务编码
+     * @param excludeId 需要保留的实例ID
+     * @return 影响行数
+     */
+    int deleteByBizDateAndTaskCodeExcludeId(@Param("bizDate") String bizDate,
+                                            @Param("taskCode") String taskCode,
+                                            @Param("excludeId") String excludeId);
 
     /**
      * 按主键刷新实例的计划信息。

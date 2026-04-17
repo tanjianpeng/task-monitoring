@@ -19,12 +19,6 @@ import java.time.LocalDateTime;
 public class TaskReportRequest {
 
     /**
-     * 请求流水号。
-     * 用于记录外部系统本次调用的请求标识，便于日志追踪。
-     */
-    private String requestId;
-
-    /**
      * 上报系统编码。
      */
     @NotBlank

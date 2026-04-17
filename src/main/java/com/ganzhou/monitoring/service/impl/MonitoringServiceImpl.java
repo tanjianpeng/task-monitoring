@@ -132,20 +132,19 @@ public class MonitoringServiceImpl implements MonitoringService {
         if (request.getStartTime() == null) {
             request.setStartTime(requestTime);
         }
-        Integer runNo = normalizeRunNo(request);
         MonitorTaskDef taskDef = validateTask(request);
-        MonitorTaskInstance instance = taskInstanceMapper.selectByBizDateAndTaskCodeAndRunNo(
-                formatBizDate(request.getBizDate()), request.getTaskCode(), runNo);
+        MonitorTaskInstance instance = findCurrentInstance(request);
         if (instance == null) {
             instance = initInstance(request, taskDef);
         } else {
             refreshPlanFields(instance, taskDef, request.getBizDate());
         }
         applyStart(instance, request, requestTime);
-        MonitorTaskEvent event = buildLog("start", instance.getResultStatus(), request, REPORT_URL);
-        taskEventMapper.insert(event);
         saveOrUpdateStartedInstance(instance);
-        return runNo;
+        cleanupRedundantInstances(instance);
+        MonitorTaskEvent event = buildLog("start", instance.getResultStatus(), request, REPORT_URL, instance.getRunTimes());
+        taskEventMapper.insert(event);
+        return instance.getRunTimes();
     }
 
     /**
@@ -159,14 +158,14 @@ public class MonitoringServiceImpl implements MonitoringService {
         if (request.getEndTime() == null) {
             request.setEndTime(requestTime);
         }
-        Integer runNo = normalizeRunNo(request);
         MonitorTaskDef taskDef = validateTask(request);
         MonitorTaskInstance instance = getRequiredInstance(request);
         applyStop(instance, taskDef, TaskResultStatusEnum.SUCCESS, request, requestTime);
-        MonitorTaskEvent event = buildLog("end", instance.getResultStatus(), request, REPORT_URL);
-        taskEventMapper.insert(event);
         taskInstanceMapper.updateById(instance);
-        return runNo;
+        cleanupRedundantInstances(instance);
+        MonitorTaskEvent event = buildLog("end", instance.getResultStatus(), request, REPORT_URL, instance.getRunTimes());
+        taskEventMapper.insert(event);
+        return instance.getRunTimes();
     }
 
     /**
@@ -181,14 +180,14 @@ public class MonitoringServiceImpl implements MonitoringService {
         if (request.getEndTime() == null) {
             request.setEndTime(requestTime);
         }
-        Integer runNo = normalizeRunNo(request);
         MonitorTaskDef taskDef = validateTask(request);
         MonitorTaskInstance instance = getRequiredInstance(request);
         applyStop(instance, taskDef, TaskResultStatusEnum.FAILED, request, requestTime);
-        MonitorTaskEvent event = buildLog("fail", instance.getResultStatus(), request, REPORT_URL);
-        taskEventMapper.insert(event);
         taskInstanceMapper.updateById(instance);
-        return runNo;
+        cleanupRedundantInstances(instance);
+        MonitorTaskEvent event = buildLog("fail", instance.getResultStatus(), request, REPORT_URL, instance.getRunTimes());
+        taskEventMapper.insert(event);
+        return instance.getRunTimes();
     }
 
     /**
@@ -203,14 +202,18 @@ public class MonitoringServiceImpl implements MonitoringService {
             request.setStartTime(requestTime);
         }
         MonitorTaskDef taskDef = validateTask(request);
-        Integer runNo = nextRunNo(request);
-        request.setRunNo(runNo);
-        MonitorTaskInstance instance = initInstance(request, taskDef);
+        MonitorTaskInstance instance = findCurrentInstance(request);
+        if (instance == null) {
+            instance = initInstance(request, taskDef);
+        } else {
+            refreshPlanFields(instance, taskDef, request.getBizDate());
+        }
         applyStart(instance, request, requestTime);
-        MonitorTaskEvent event = buildLog("restart", instance.getResultStatus(), request, REPORT_URL);
+        saveOrUpdateStartedInstance(instance);
+        cleanupRedundantInstances(instance);
+        MonitorTaskEvent event = buildLog("restart", instance.getResultStatus(), request, REPORT_URL, instance.getRunTimes());
         taskEventMapper.insert(event);
-        taskInstanceMapper.insert(instance);
-        return runNo;
+        return instance.getRunTimes();
     }
 
     /**
@@ -219,12 +222,27 @@ public class MonitoringServiceImpl implements MonitoringService {
      * @param request 外部系统上报请求报文
      */
     private MonitorTaskInstance getRequiredInstance(TaskReportRequest request) {
-        MonitorTaskInstance instance = taskInstanceMapper.selectByBizDateAndTaskCodeAndRunNo(
-                formatBizDate(request.getBizDate()), request.getTaskCode(), normalizeRunNo(request));
+        MonitorTaskInstance instance = findCurrentInstance(request);
         if (instance == null) {
             throw new BusinessException("任务实例不存在，请先调用start或restart接口");
         }
         return instance;
+    }
+
+    /**
+     * 查询当前应操作的任务实例。
+     * 优先按请求批次查询，未命中时回退到同日同任务最新一条实例，兼容历史重复数据场景。
+     *
+     * @param request 外部系统上报请求报文
+     */
+    private MonitorTaskInstance findCurrentInstance(TaskReportRequest request) {
+        String bizDate = formatBizDate(request.getBizDate());
+        MonitorTaskInstance instance = taskInstanceMapper.selectByBizDateAndTaskCodeAndRunNo(
+                bizDate, request.getTaskCode(), normalizeRunNo(request));
+        if (instance != null) {
+            return instance;
+        }
+        return taskInstanceMapper.selectLatestByBizDateAndTaskCode(bizDate, request.getTaskCode());
     }
 
     /**
@@ -252,14 +270,13 @@ public class MonitoringServiceImpl implements MonitoringService {
      * @param requestUrl 请求地址
      */
     private MonitorTaskEvent buildLog(String actionType, String computedResultStatus,
-                                      TaskReportRequest request, String requestUrl) {
+                                      TaskReportRequest request, String requestUrl, Integer runNo) {
         MonitorTaskEvent log = new MonitorTaskEvent();
         log.setId(UUID.randomUUID().toString().replace("-", ""));
-        log.setRequestId(request.getRequestId());
         log.setRequestUrl(requestUrl);
         log.setRequestStatus(actionType);
         log.setBizDate(formatBizDate(request.getBizDate()));
-        log.setRunTimes(normalizeRunNo(request));
+        log.setRunTimes(runNo == null ? normalizeRunNo(request) : runNo);
         log.setTaskCode(request.getTaskCode());
         log.setSystemCode(request.getSystemCode());
         log.setResultStatus(computedResultStatus);
@@ -321,9 +338,10 @@ public class MonitoringServiceImpl implements MonitoringService {
         instance.setActualEndTime(null);
         instance.setCurrentCostMinutes(null);
         instance.setResultStatus(TaskResultStatusEnum.RUNNING.getCode());
+        LocalTime requestAt = toLocalTime(requestTime);
         if (instance.getLatestStartTime() != null
-                && request.getStartTime() != null
-                && toLocalTime(request.getStartTime()).isAfter(instance.getLatestStartTime())) {
+                && requestAt != null
+                && requestAt.isAfter(instance.getLatestStartTime())) {
             instance.setDelayedFlag(1);
             instance.setResultStatus(TaskResultStatusEnum.DELAYED.getCode());
         } else {
@@ -545,6 +563,19 @@ public class MonitoringServiceImpl implements MonitoringService {
     }
 
     /**
+     * 清理同一天同任务的冗余实例，只保留当前实例。
+     *
+     * @param current 当前实例
+     */
+    private void cleanupRedundantInstances(MonitorTaskInstance current) {
+        if (current == null || current.getId() == null) {
+            return;
+        }
+        taskInstanceMapper.deleteByBizDateAndTaskCodeExcludeId(
+                current.getBizDate(), current.getTaskCode(), current.getId());
+    }
+
+    /**
      * 保存或刷新凌晨初始化生成的任务实例。
      * 若当天实例不存在则新增；若已存在但尚未开始执行，则仅更新计划类字段。
      *
@@ -658,18 +689,6 @@ public class MonitoringServiceImpl implements MonitoringService {
      */
     private LocalDateTime resolveRequestTime(TaskReportRequest request) {
         return request.getRequestTime() != null ? request.getRequestTime() : LocalDateTime.now();
-    }
-
-    /**
-     * 生成新的重跑次数。
-     * 若当天已有历史实例，则在最大 run_times 基础上加一。
-     *
-     * @param request 外部系统上报请求报文
-     */
-    private Integer nextRunNo(TaskReportRequest request) {
-        Integer maxRunTimes = taskInstanceMapper.selectMaxRunTimes(
-                formatBizDate(request.getBizDate()), request.getTaskCode());
-        return maxRunTimes == null ? 1 : maxRunTimes + 1;
     }
 
     /**

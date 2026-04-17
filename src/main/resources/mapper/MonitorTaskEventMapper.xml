@@ -9,22 +9,21 @@
         用途：每次业务系统调用 start/end/restart/fail 接口时，都落一条调用流水。
         入参：
         1. id：日志主键。
-        2. requestId：请求流水号。
-        3. requestUrl：调用地址。
-        4. requestStatus：请求动作状态。
-        5. systemCode：系统编码。
-        6. taskCode：任务编码。
-        7. bizDate：业务日期。
-        8. runTimes：运行批次。
-        9. requestJson：原始请求报文。
-        10. resultStatus：执行结果状态。
+        2. requestUrl：调用地址。
+        3. requestStatus：请求动作状态。
+        4. systemCode：系统编码。
+        5. taskCode：任务编码。
+        6. bizDate：业务日期。
+        7. runTimes：运行批次。
+        8. requestJson：原始请求报文。
+        9. resultStatus：执行结果状态。
     -->
     <insert id="insert" parameterType="MonitorTaskEvent">
         insert into monitor_task_log (
-            id, request_id, request_url, request_status, system_code, task_code,
+            id, request_url, request_status, system_code, task_code,
             biz_date, run_times, request_json, result_status, created_time
         ) values (
-            #{id}, #{requestId}, #{requestUrl}, #{requestStatus}, #{systemCode}, #{taskCode},
+            #{id}, #{requestUrl}, #{requestStatus}, #{systemCode}, #{taskCode},
             #{bizDate}, #{runTimes}, #{requestJson}, #{resultStatus}, now()
         )
     </insert>
@@ -37,8 +36,7 @@
         2. taskCode：任务编码。
     -->
     <select id="selectByBizDateAndTaskCode" resultType="com.ganzhou.monitoring.dto.TaskEventVO">
-        select request_id,
-               request_status,
+        select request_status,
                created_time as event_time,
                result_status
         from monitor_task_log
