@@ -1,6 +1,6 @@
 package com.ganzhou.monitoring.dto;
 
-import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 import lombok.Data;
 
@@ -32,12 +32,6 @@ public class TaskCardVO {
     /** 系统名称。 */
     private String systemName;
 
-    /** 负责人。 */
-    private String ownerName;
-
-    /** 监督人。 */
-    private String supervisorName;
-
     /** 前置依赖产物。 */
     private String preRequisiteProd;
 
@@ -53,8 +47,11 @@ public class TaskCardVO {
     /** 默认耗时，单位分钟。 */
     private Integer defaultCostMinutes;
 
-    /** 频率。 */
-    private String frequency;
+    /** 跑批周期。 */
+    private String batchProcessing;
+
+    /** 是否关键路径。 */
+    private String isPath;
 
     /** 任务启停状态。 */
     private String taskIsFlag;
@@ -63,19 +60,19 @@ public class TaskCardVO {
     private String remark;
 
     /** 计划开始时间。 */
-    private LocalDateTime planStartTime;
+    private LocalTime planStartTime;
 
     /** 最晚开始时间。 */
-    private LocalDateTime latestStartTime;
+    private LocalTime latestStartTime;
 
     /** 计划结束时间。 */
-    private LocalDateTime planEndTime;
+    private LocalTime planEndTime;
 
     /** 实际开始时间。 */
-    private LocalDateTime actualStartTime;
+    private LocalTime actualStartTime;
 
     /** 实际结束时间。 */
-    private LocalDateTime actualEndTime;
+    private LocalTime actualEndTime;
 
     /** 当前耗时，单位秒。 */
     private Integer currentCostSeconds;
@@ -83,8 +80,8 @@ public class TaskCardVO {
     /** 历史平均耗时，单位秒。 */
     private Integer avgCostSeconds;
 
-    /** 预计结束时间。 */
-    private LocalDateTime predictEndTime;
+    /** 最晚结束时间。 */
+    private LocalTime latestEndTime;
 
     /** 是否延迟。 */
     private Integer delayedFlag;

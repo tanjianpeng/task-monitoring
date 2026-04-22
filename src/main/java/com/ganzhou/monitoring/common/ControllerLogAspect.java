@@ -35,6 +35,8 @@ public class ControllerLogAspect {
 
     /**
      * 拦截所有 controller 包下的公开接口方法。
+     *
+     * @param joinPoint AOP 切点对象
      */
     @Around("execution(public * com.ganzhou.monitoring.controller..*(..))")
     public Object logController(ProceedingJoinPoint joinPoint) throws Throwable {
@@ -72,6 +74,8 @@ public class ControllerLogAspect {
 
     /**
      * 组装接口名称，便于日志快速定位具体 controller 方法。
+     *
+     * @param joinPoint AOP 切点对象
      */
     private String buildInterfaceName(ProceedingJoinPoint joinPoint) {
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
@@ -84,9 +88,10 @@ public class ControllerLogAspect {
      */
     private String resolveRequestUri() {
         RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
-        if (!(requestAttributes instanceof ServletRequestAttributes servletRequestAttributes)) {
+        if (!(requestAttributes instanceof ServletRequestAttributes)) {
             return "unknown";
         }
+        ServletRequestAttributes servletRequestAttributes = (ServletRequestAttributes) requestAttributes;
         HttpServletRequest request = servletRequestAttributes.getRequest();
         return request == null ? "unknown" : request.getRequestURI();
     }

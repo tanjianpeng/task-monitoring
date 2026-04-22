@@ -14,9 +14,6 @@ import lombok.Data;
 @Data
 public class TaskEventVO {
 
-    /** 请求流水号。 */
-    private String requestId;
-
     /** 请求动作状态。 */
     private String requestStatus;
 

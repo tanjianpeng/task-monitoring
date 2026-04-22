@@ -29,6 +29,6 @@ public interface MonitorTaskDefMapper {
      *
      * @return 启用任务列表，主要用于每日 0 点预生成任务实例
      */
-    List<MonitorTaskDef> selectActiveTasks();
+    List<MonitorTaskDef> selectActiveTasks(@Param("monthEndView") boolean monthEndView);
 
 }

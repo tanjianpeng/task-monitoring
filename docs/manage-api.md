@@ -8,7 +8,7 @@
 
 ### 2. 查询系统详情
 
-- `GET /api/manage/systems/{systemCode}`
+- `GET /api/manage/systems/detail?systemCode=...`
 
 ### 3. 新增系统
 
@@ -16,11 +16,11 @@
 
 ### 4. 修改系统
 
-- `PUT /api/manage/systems/{systemCode}`
+- `PUT /api/manage/systems/update?systemCode=...`
 
 ### 5. 删除系统
 
-- `DELETE /api/manage/systems/{systemCode}`
+- `DELETE /api/manage/systems/delete?systemCode=...`
 
 说明：
 
@@ -35,7 +35,7 @@
 
 ### 2. 查询任务详情
 
-- `GET /api/manage/tasks/{taskCode}`
+- `GET /api/manage/tasks/detail?taskCode=...`
 
 说明：
 
@@ -48,11 +48,11 @@
 
 ### 4. 修改任务
 
-- `PUT /api/manage/tasks/{taskCode}`
+- `PUT /api/manage/tasks/update?taskCode=...`
 
 ### 5. 删除任务
 
-- `DELETE /api/manage/tasks/{taskCode}`
+- `DELETE /api/manage/tasks/delete?taskCode=...`
 
 说明：
 
@@ -68,12 +68,10 @@
   "taskCode": "ACPL_BAT_01",
   "taskName": "核算平台日终批处理任务",
   "systemCode": "ACPL",
-  "ownerName": "王臣",
-  "supervisorName": "谢卫华",
   "preRequisiteProd": "核心日终文件",
   "theBatchProd": "核算平台批处理结果文件",
-  "planStartTime": "2026-03-31 21:30:00",
-  "planEndTime": "2026-03-31 22:05:00",
+  "planStartTime": "21:30:00",
+  "planEndTime": "22:05:00",
   "defaultCostMinutes": 35,
   "posX": 530,
   "posY": 340,

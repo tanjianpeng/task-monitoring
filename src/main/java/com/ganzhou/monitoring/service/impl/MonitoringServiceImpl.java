@@ -24,6 +24,7 @@ import com.ganzhou.monitoring.mapper.MonitorTaskInstanceMapper;
 import com.ganzhou.monitoring.service.MonitoringService;
 import com.ganzhou.monitoring.service.TaskRuntimeConfigService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
  * @version 1.0
  */
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class MonitoringServiceImpl implements MonitoringService {
 
@@ -73,98 +75,126 @@ public class MonitoringServiceImpl implements MonitoringService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public Integer handleTaskAction(String action, TaskReportRequest request) {
-        String normalizedAction = normalizeAction(action, request);
-        return switch (normalizedAction) {
-            case "start" -> handleStart(request);
-            case "stop" -> handleStop(request);
-            case "restart" -> handleRestart(request);
-            case "fail" -> handleFail(request);
-            default -> throw new BusinessException("不支持的动作类型: " + normalizedAction);
-        };
+        try {
+            String normalizedAction = normalizeAction(action, request);
+            if ("start".equals(normalizedAction)) {
+                return handleStart(request);
+            }
+            if ("end".equals(normalizedAction)) {
+                return handleEnd(request);
+            }
+            if ("restart".equals(normalizedAction)) {
+                return handleRestart(request);
+            }
+            if ("fail".equals(normalizedAction)) {
+                return handleFail(request);
+            }
+            throw new BusinessException("不支持的动作类型: " + normalizedAction);
+        } catch (RuntimeException ex) {
+            log.error("处理任务动作异常，action={}, taskCode={}, bizDate={}, runNo={}",
+                    action,
+                    request == null ? null : request.getTaskCode(),
+                    request == null ? null : request.getBizDate(),
+                    request == null ? null : request.getRunNo(),
+                    ex);
+            throw ex;
+        }
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public int initializeTaskInstances(LocalDate bizDate) {
-        String bizDateText = formatBizDate(bizDate);
-        List<MonitorTaskDef> taskDefs = taskDefMapper.selectActiveTasks();
-        int affected = 0;
-        for (MonitorTaskDef taskDef : taskDefs) {
-            MonitorTaskInstance snapshot = buildInstanceSnapshot(taskDef, bizDate, 0);
-            MonitorTaskInstance existing = taskInstanceMapper.selectByBizDateAndTaskCodeAndRunNo(
-                    bizDateText, taskDef.getTaskCode(), 0);
-            affected += saveOrRefreshInitializedInstance(snapshot, existing);
+        try {
+            String bizDateText = formatBizDate(bizDate);
+            List<MonitorTaskDef> taskDefs = taskDefMapper.selectActiveTasks(isMonthEndView(bizDate));
+            int affected = 0;
+            for (MonitorTaskDef taskDef : taskDefs) {
+                MonitorTaskInstance snapshot = buildInstanceSnapshot(taskDef, bizDate, 0);
+                MonitorTaskInstance existing = taskInstanceMapper.selectByBizDateAndTaskCodeAndRunNo(
+                        bizDateText, taskDef.getTaskCode(), 0);
+                affected += saveOrRefreshInitializedInstance(snapshot, existing);
+            }
+            return affected;
+        } catch (RuntimeException ex) {
+            log.error("初始化任务实例异常，bizDate={}", bizDate, ex);
+            throw ex;
         }
-        return affected;
     }
 
     /**
      * 处理开始动作。
      * 业务系统调用 start 时，只实时更新当前任务自己的实例数据。
+     *
+     * @param request 外部系统上报请求报文
      */
     private Integer handleStart(TaskReportRequest request) {
         LocalDateTime requestTime = resolveRequestTime(request);
         if (request.getStartTime() == null) {
             request.setStartTime(requestTime);
         }
-        Integer runNo = normalizeRunNo(request);
         MonitorTaskDef taskDef = validateTask(request);
-        MonitorTaskInstance instance = taskInstanceMapper.selectByBizDateAndTaskCodeAndRunNo(
-                formatBizDate(request.getBizDate()), request.getTaskCode(), runNo);
+        MonitorTaskInstance instance = findCurrentInstance(request);
         if (instance == null) {
             instance = initInstance(request, taskDef);
         } else {
             refreshPlanFields(instance, taskDef, request.getBizDate());
         }
         applyStart(instance, request, requestTime);
-        MonitorTaskEvent event = buildLog("start", instance.getResultStatus(), request, REPORT_URL);
-        taskEventMapper.insert(event);
         saveOrUpdateStartedInstance(instance);
-        return runNo;
+        cleanupRedundantInstances(instance);
+        MonitorTaskEvent event = buildLog("start", instance.getResultStatus(), request, REPORT_URL, instance.getRunTimes());
+        taskEventMapper.insert(event);
+        return instance.getRunTimes();
     }
 
     /**
      * 处理结束动作。
-     * 业务系统调用 stop 时，只实时更新当前任务自己的实例数据，并写入成功状态。
+     * 业务系统调用 end 时，只实时更新当前任务自己的实例数据，并写入成功状态。
+     *
+     * @param request 外部系统上报请求报文
      */
-    private Integer handleStop(TaskReportRequest request) {
+    private Integer handleEnd(TaskReportRequest request) {
         LocalDateTime requestTime = resolveRequestTime(request);
         if (request.getEndTime() == null) {
             request.setEndTime(requestTime);
         }
-        Integer runNo = normalizeRunNo(request);
         MonitorTaskDef taskDef = validateTask(request);
         MonitorTaskInstance instance = getRequiredInstance(request);
         applyStop(instance, taskDef, TaskResultStatusEnum.SUCCESS, request, requestTime);
-        MonitorTaskEvent event = buildLog("stop", instance.getResultStatus(), request, REPORT_URL);
-        taskEventMapper.insert(event);
         taskInstanceMapper.updateById(instance);
-        return runNo;
+        cleanupRedundantInstances(instance);
+        MonitorTaskEvent event = buildLog("end", instance.getResultStatus(), request, REPORT_URL, instance.getRunTimes());
+        taskEventMapper.insert(event);
+        return instance.getRunTimes();
     }
 
     /**
      * 处理失败动作。
      * fail 表示任务执行失败结束，未显式传结束时间时默认使用请求时间。
      * 业务系统调用 fail 时，只实时更新当前任务自己的实例数据，并写入失败状态。
+     *
+     * @param request 外部系统上报请求报文
      */
     private Integer handleFail(TaskReportRequest request) {
         LocalDateTime requestTime = resolveRequestTime(request);
         if (request.getEndTime() == null) {
             request.setEndTime(requestTime);
         }
-        Integer runNo = normalizeRunNo(request);
         MonitorTaskDef taskDef = validateTask(request);
         MonitorTaskInstance instance = getRequiredInstance(request);
         applyStop(instance, taskDef, TaskResultStatusEnum.FAILED, request, requestTime);
-        MonitorTaskEvent event = buildLog("fail", instance.getResultStatus(), request, REPORT_URL);
-        taskEventMapper.insert(event);
         taskInstanceMapper.updateById(instance);
-        return runNo;
+        cleanupRedundantInstances(instance);
+        MonitorTaskEvent event = buildLog("fail", instance.getResultStatus(), request, REPORT_URL, instance.getRunTimes());
+        taskEventMapper.insert(event);
+        return instance.getRunTimes();
     }
 
     /**
      * 处理重跑动作。
      * 重跑会自动生成新的批次号，并将实例状态重置为新一轮运行中。
+     *
+     * @param request 外部系统上报请求报文
      */
     private Integer handleRestart(TaskReportRequest request) {
         LocalDateTime requestTime = resolveRequestTime(request);
@@ -172,19 +202,27 @@ public class MonitoringServiceImpl implements MonitoringService {
             request.setStartTime(requestTime);
         }
         MonitorTaskDef taskDef = validateTask(request);
-        Integer runNo = nextRunNo(request);
-        request.setRunNo(runNo);
-        MonitorTaskInstance instance = initInstance(request, taskDef);
+        MonitorTaskInstance instance = findCurrentInstance(request);
+        if (instance == null) {
+            instance = initInstance(request, taskDef);
+        } else {
+            refreshPlanFields(instance, taskDef, request.getBizDate());
+        }
         applyStart(instance, request, requestTime);
-        MonitorTaskEvent event = buildLog("restart", instance.getResultStatus(), request, REPORT_URL);
+        saveOrUpdateStartedInstance(instance);
+        cleanupRedundantInstances(instance);
+        MonitorTaskEvent event = buildLog("restart", instance.getResultStatus(), request, REPORT_URL, instance.getRunTimes());
         taskEventMapper.insert(event);
-        taskInstanceMapper.insert(instance);
-        return runNo;
+        return instance.getRunTimes();
     }
 
+    /**
+     * 查询指定任务实例，若不存在则直接抛出异常。
+     *
+     * @param request 外部系统上报请求报文
+     */
     private MonitorTaskInstance getRequiredInstance(TaskReportRequest request) {
-        MonitorTaskInstance instance = taskInstanceMapper.selectByBizDateAndTaskCodeAndRunNo(
-                formatBizDate(request.getBizDate()), request.getTaskCode(), normalizeRunNo(request));
+        MonitorTaskInstance instance = findCurrentInstance(request);
         if (instance == null) {
             throw new BusinessException("任务实例不存在，请先调用start或restart接口");
         }
@@ -192,7 +230,25 @@ public class MonitoringServiceImpl implements MonitoringService {
     }
 
     /**
+     * 查询当前应操作的任务实例。
+     * 优先按请求批次查询，未命中时回退到同日同任务最新一条实例，兼容历史重复数据场景。
+     *
+     * @param request 外部系统上报请求报文
+     */
+    private MonitorTaskInstance findCurrentInstance(TaskReportRequest request) {
+        String bizDate = formatBizDate(request.getBizDate());
+        MonitorTaskInstance instance = taskInstanceMapper.selectByBizDateAndTaskCodeAndRunNo(
+                bizDate, request.getTaskCode(), normalizeRunNo(request));
+        if (instance != null) {
+            return instance;
+        }
+        return taskInstanceMapper.selectLatestByBizDateAndTaskCode(bizDate, request.getTaskCode());
+    }
+
+    /**
      * 校验任务定义是否存在，且任务与上报系统编码匹配。
+     *
+     * @param request 外部系统上报请求报文
      */
     private MonitorTaskDef validateTask(TaskReportRequest request) {
         MonitorTaskDef taskDef = taskDefMapper.selectByTaskCode(request.getTaskCode());
@@ -207,16 +263,20 @@ public class MonitoringServiceImpl implements MonitoringService {
 
     /**
      * 将上报请求转换为调用日志对象。
+     *
+     * @param actionType 请求动作状态
+     * @param computedResultStatus 系统计算后的结果状态
+     * @param request 外部系统上报请求报文
+     * @param requestUrl 请求地址
      */
     private MonitorTaskEvent buildLog(String actionType, String computedResultStatus,
-                                      TaskReportRequest request, String requestUrl) {
+                                      TaskReportRequest request, String requestUrl, Integer runNo) {
         MonitorTaskEvent log = new MonitorTaskEvent();
         log.setId(UUID.randomUUID().toString().replace("-", ""));
-        log.setRequestId(request.getRequestId());
         log.setRequestUrl(requestUrl);
         log.setRequestStatus(actionType);
         log.setBizDate(formatBizDate(request.getBizDate()));
-        log.setRunTimes(normalizeRunNo(request));
+        log.setRunTimes(runNo == null ? normalizeRunNo(request) : runNo);
         log.setTaskCode(request.getTaskCode());
         log.setSystemCode(request.getSystemCode());
         log.setResultStatus(computedResultStatus);
@@ -227,6 +287,9 @@ public class MonitoringServiceImpl implements MonitoringService {
     /**
      * 基于任务定义初始化当天任务实例。
      * 主要用于兜底场景，例如调度未预生成实例、但业务系统已经开始上报。
+     *
+     * @param request 外部系统上报请求报文
+     * @param taskDef 任务定义实体
      */
     private MonitorTaskInstance initInstance(TaskReportRequest request, MonitorTaskDef taskDef) {
         return buildInstanceSnapshot(taskDef, request.getBizDate(), normalizeRunNo(request));
@@ -236,6 +299,10 @@ public class MonitoringServiceImpl implements MonitoringService {
      * 将任务定义转换成某个业务日期下的实例快照。
      * 任务定义里保存的是模板时间，这里统一折算到具体业务日期。
      * 每天凌晨初始化实例时，默认状态写成 NOTSTART，表示任务尚未开始。
+     *
+     * @param taskDef 任务定义实体
+     * @param bizDate 业务日期
+     * @param runNo 运行批次号
      */
     private MonitorTaskInstance buildInstanceSnapshot(MonitorTaskDef taskDef, LocalDate bizDate, Integer runNo) {
         MonitorTaskInstance instance = new MonitorTaskInstance();
@@ -247,10 +314,9 @@ public class MonitoringServiceImpl implements MonitoringService {
         instance.setPlanStartTime(resolvePlanDateTime(bizDate, taskDef.getPlanStartTime()));
         instance.setPlanEndTime(resolvePlanDateTime(bizDate, taskDef.getPlanEndTime()));
         instance.setLatestStartTime(resolveLatestStartTime(taskDef, instance.getPlanStartTime()));
-        instance.setCurrentCostMinutes(0);
+        instance.setCurrentCostMinutes(null);
         instance.setAvgCostMinutes(resolveHistoricalAvgCostMinutes(taskDef.getTaskCode(), bizDate, taskDef));
-        instance.setFrequency(resolveInstanceFrequency(bizDate));
-        instance.setPredictEndTime(null);
+        instance.setLatestEndTime(resolveLatestEndTime(taskDef, instance.getPlanEndTime()));
         instance.setDelayedFlag(0);
         instance.setTimeoutFlag(0);
         instance.setResultStatus(TaskResultStatusEnum.NOTSTART.getCode());
@@ -262,36 +328,47 @@ public class MonitoringServiceImpl implements MonitoringService {
      * 应用开始动作到实例快照。
      * 若实际开始时间超过最晚开始时间，则当前状态记为延迟；
      * 预计结束时间统一按“开始时间 + 历史平均耗时”计算。
+     *
+     * @param instance 任务实例
+     * @param request 外部系统上报请求报文
+     * @param requestTime 请求到达时间
      */
     private void applyStart(MonitorTaskInstance instance, TaskReportRequest request, LocalDateTime requestTime) {
-        instance.setActualStartTime(request.getStartTime());
+        instance.setActualStartTime(toLocalTime(request.getStartTime()));
         instance.setActualEndTime(null);
-        instance.setCurrentCostMinutes(0);
+        instance.setCurrentCostMinutes(null);
         instance.setResultStatus(TaskResultStatusEnum.RUNNING.getCode());
+        LocalTime requestAt = toLocalTime(requestTime);
         if (instance.getLatestStartTime() != null
-                && request.getStartTime() != null
-                && request.getStartTime().isAfter(instance.getLatestStartTime())) {
+                && requestAt != null
+                && requestAt.isAfter(instance.getLatestStartTime())) {
             instance.setDelayedFlag(1);
             instance.setResultStatus(TaskResultStatusEnum.DELAYED.getCode());
         } else {
             instance.setDelayedFlag(0);
         }
-        refreshPredictEndTime(instance, request.getBizDate());
+        refreshLatestEndTime(instance, request.getBizDate());
         markFlags(instance, requestTime);
     }
 
     /**
      * 应用结束动作到实例快照。
      * 如果结束回调到达时间或实际结束时间晚于任务预计结束时间，则记为延迟结束。
+     *
+     * @param instance 任务实例
+     * @param taskDef 任务定义实体
+     * @param computedResultStatus 系统计算后的结果状态
+     * @param request 外部系统上报请求报文
+     * @param requestTime 请求到达时间
      */
     private void applyStop(MonitorTaskInstance instance, MonitorTaskDef taskDef, TaskResultStatusEnum computedResultStatus,
                            TaskReportRequest request, LocalDateTime requestTime) {
         if (instance.getActualStartTime() == null && request.getStartTime() != null) {
-            instance.setActualStartTime(request.getStartTime());
+            instance.setActualStartTime(toLocalTime(request.getStartTime()));
         }
         refreshPlanFields(instance, taskDef, request.getBizDate());
-        refreshPredictEndTime(instance, request.getBizDate());
-        instance.setActualEndTime(request.getEndTime());
+        LocalTime originalLatestEndTime = instance.getLatestEndTime();
+        instance.setActualEndTime(toLocalTime(request.getEndTime()));
         fillCost(instance, request);
         if (TaskResultStatusEnum.SUCCESS == computedResultStatus) {
             instance.setResultStatus(TaskResultStatusEnum.SUCCESS.getCode());
@@ -301,10 +378,13 @@ public class MonitoringServiceImpl implements MonitoringService {
             throw new BusinessException("结束动作的结果状态仅支持SUCCESS或FAILED");
         }
         if (instance.getActualEndTime() != null
-                && instance.getPredictEndTime() != null
-                && instance.getActualEndTime().isAfter(instance.getPredictEndTime())) {
+                && originalLatestEndTime != null
+                && instance.getActualEndTime().isAfter(originalLatestEndTime)) {
             instance.setDelayedFlag(1);
             instance.setTimeoutFlag(1);
+        }
+        if (instance.getActualEndTime() != null) {
+            instance.setLatestEndTime(instance.getActualEndTime().plusMinutes(resolveAllowDelayMinutes(taskDef)));
         }
         markFlags(instance, requestTime);
     }
@@ -313,16 +393,17 @@ public class MonitoringServiceImpl implements MonitoringService {
      * 填充耗时。
      * 当前耗时统一按“结束调用时间 - 开始调用时间”计算。
      * 运行中或未开始场景不回写耗时，保持为 0。
+     *
+     * @param instance 任务实例
+     * @param request 外部系统上报请求报文
      */
     private void fillCost(MonitorTaskInstance instance, TaskReportRequest request) {
         if (instance.getActualStartTime() != null && instance.getActualEndTime() != null) {
-            long minutes = Duration.between(instance.getActualStartTime(), instance.getActualEndTime()).toMinutes();
+            long minutes = calculateMinutesBetween(instance.getActualStartTime(), instance.getActualEndTime());
             instance.setCurrentCostMinutes((int) minutes);
             return;
         }
-        if (instance.getActualStartTime() != null) {
-            instance.setCurrentCostMinutes(0);
-        }
+        instance.setCurrentCostMinutes(null);
     }
 
     /**
@@ -335,13 +416,16 @@ public class MonitoringServiceImpl implements MonitoringService {
      * 4. 成功结束：SUCCESS。
      * 5. 失败结束：FAILED。
      * 6. 成功或失败结束后若超过预计结束时间，仅保留成功/失败状态，同时 delayedFlag 置为 1。
+     *
+     * @param instance 任务实例
+     * @param requestTime 请求到达时间
      */
     private void markFlags(MonitorTaskInstance instance, LocalDateTime requestTime) {
-        LocalDateTime current = requestTime == null ? LocalDateTime.now() : requestTime;
+        LocalTime current = toLocalTime(requestTime == null ? LocalDateTime.now() : requestTime);
         if (instance.getActualEndTime() != null) {
             instance.setCurrentCostMinutes(resolveCurrentCostMinutes(instance, current));
         } else if (instance.getActualStartTime() == null) {
-            instance.setCurrentCostMinutes(0);
+            instance.setCurrentCostMinutes(null);
         }
         if (instance.getDelayedFlag() == null) {
             instance.setDelayedFlag(0);
@@ -353,8 +437,8 @@ public class MonitoringServiceImpl implements MonitoringService {
             return;
         }
         if (instance.getActualEndTime() == null
-                && instance.getPredictEndTime() != null
-                && current.isAfter(instance.getPredictEndTime())) {
+                && instance.getLatestEndTime() != null
+                && current.isAfter(instance.getLatestEndTime())) {
             instance.setTimeoutFlag(1);
             instance.setDelayedFlag(1);
             instance.setResultStatus(TaskResultStatusEnum.DELAYED.getCode());
@@ -372,38 +456,45 @@ public class MonitoringServiceImpl implements MonitoringService {
             return;
         }
         if (instance.getActualEndTime() != null
-                && instance.getPredictEndTime() != null
-                && instance.getActualEndTime().isAfter(instance.getPredictEndTime())) {
+                && instance.getLatestEndTime() != null
+                && instance.getActualEndTime().isAfter(instance.getLatestEndTime())) {
             instance.setTimeoutFlag(1);
             instance.setDelayedFlag(1);
         }
     }
 
     /**
-     * 根据开始时间和历史平均耗时刷新预计结束时间。
+     * 根据计划结束时间或实际开始时间刷新最晚结束时间。
      * 平日视图取往前 30 个非月底业务日平均耗时，月底视图取往前 6 个自然月底业务日平均耗时。
      * 若统计区间内没有成功数据，则回退到任务定义中的 defaultCostMinutes。
+     *
+     * @param instance 任务实例
+     * @param bizDate 业务日期
      */
-    private void refreshPredictEndTime(MonitorTaskInstance instance, LocalDate bizDate) {
+    private void refreshLatestEndTime(MonitorTaskInstance instance, LocalDate bizDate) {
+        MonitorTaskDef taskDef = taskDefMapper.selectByTaskCode(instance.getTaskCode());
+        Integer allowDelayMinutes = resolveAllowDelayMinutes(taskDef);
         if (instance.getActualStartTime() == null) {
-            instance.setPredictEndTime(null);
+            instance.setLatestEndTime(resolveLatestEndTime(taskDef, instance.getPlanEndTime()));
             return;
         }
-        MonitorTaskDef taskDef = taskDefMapper.selectByTaskCode(instance.getTaskCode());
         Integer avgCostMinutes = resolveHistoricalAvgCostMinutes(instance.getTaskCode(), bizDate, taskDef);
         instance.setAvgCostMinutes(avgCostMinutes);
         if (avgCostMinutes == null || avgCostMinutes <= 0) {
-            instance.setPredictEndTime(null);
+            instance.setLatestEndTime(resolveLatestEndTime(taskDef, instance.getPlanEndTime()));
             return;
         }
-        instance.setPredictEndTime(instance.getActualStartTime().plusMinutes(avgCostMinutes));
+        instance.setLatestEndTime(instance.getActualStartTime().plusMinutes(avgCostMinutes + allowDelayMinutes));
     }
 
     /**
      * 计算实例最晚开始时间。
      * 允许延迟分钟数统一通过预留的动态配置查询能力按 taskCode 获取，未配置时回退为 0 分钟。
+     *
+     * @param taskDef 任务定义实体
+     * @param planStartTime 计划开始时间
      */
-    private LocalDateTime resolveLatestStartTime(MonitorTaskDef taskDef, LocalDateTime planStartTime) {
+    private LocalTime resolveLatestStartTime(MonitorTaskDef taskDef, LocalTime planStartTime) {
         if (planStartTime == null) {
             return null;
         }
@@ -415,8 +506,30 @@ public class MonitoringServiceImpl implements MonitoringService {
     }
 
     /**
+     * 计算实例最晚结束时间。
+     * 未开始时按计划结束时间加允许延迟分钟数计算，便于初始化阶段也能拿到延迟阈值。
+     *
+     * @param taskDef 任务定义实体
+     * @param planEndTime 计划结束时间
+     */
+    private LocalTime resolveLatestEndTime(MonitorTaskDef taskDef, LocalTime planEndTime) {
+        if (planEndTime == null) {
+            return null;
+        }
+        Integer allowDelayMinutes = resolveAllowDelayMinutes(taskDef);
+        if (allowDelayMinutes == null) {
+            return planEndTime;
+        }
+        return planEndTime.plusMinutes(allowDelayMinutes);
+    }
+
+    /**
      * 刷新实例中的计划类字段。
      * 当实例已提前生成、但动态配置在业务上报前发生变化时，确保延迟判定仍使用最新口径。
+     *
+     * @param instance 任务实例
+     * @param taskDef 任务定义实体
+     * @param bizDate 业务日期
      */
     private void refreshPlanFields(MonitorTaskInstance instance, MonitorTaskDef taskDef, LocalDate bizDate) {
         instance.setSystemCode(taskDef.getSystemCode());
@@ -424,11 +537,10 @@ public class MonitoringServiceImpl implements MonitoringService {
         instance.setPlanEndTime(resolvePlanDateTime(bizDate, taskDef.getPlanEndTime()));
         instance.setLatestStartTime(resolveLatestStartTime(taskDef, instance.getPlanStartTime()));
         instance.setAvgCostMinutes(resolveHistoricalAvgCostMinutes(taskDef.getTaskCode(), bizDate, taskDef));
-        instance.setFrequency(resolveInstanceFrequency(bizDate));
         if (instance.getActualStartTime() == null) {
-            instance.setPredictEndTime(null);
+            instance.setLatestEndTime(resolveLatestEndTime(taskDef, instance.getPlanEndTime()));
         } else {
-            refreshPredictEndTime(instance, bizDate);
+            refreshLatestEndTime(instance, bizDate);
         }
         instance.setIsFlag(defaultDisplayFlag(taskDef.getIsFlag()));
     }
@@ -436,6 +548,8 @@ public class MonitoringServiceImpl implements MonitoringService {
     /**
      * 保存或刷新 start 动作对应的任务实例。
      * 先判断实例是否已存在，不存在时执行新增，存在时执行更新，避免直接 update 导致实例不存在时报错。
+     *
+     * @param instance 任务实例
      */
     private void saveOrUpdateStartedInstance(MonitorTaskInstance instance) {
         MonitorTaskInstance existing = taskInstanceMapper.selectByBizDateAndTaskCodeAndRunNo(
@@ -449,8 +563,24 @@ public class MonitoringServiceImpl implements MonitoringService {
     }
 
     /**
+     * 清理同一天同任务的冗余实例，只保留当前实例。
+     *
+     * @param current 当前实例
+     */
+    private void cleanupRedundantInstances(MonitorTaskInstance current) {
+        if (current == null || current.getId() == null) {
+            return;
+        }
+        taskInstanceMapper.deleteByBizDateAndTaskCodeExcludeId(
+                current.getBizDate(), current.getTaskCode(), current.getId());
+    }
+
+    /**
      * 保存或刷新凌晨初始化生成的任务实例。
      * 若当天实例不存在则新增；若已存在但尚未开始执行，则仅更新计划类字段。
+     *
+     * @param snapshot 根据任务定义生成的实例快照
+     * @param existing 数据库中已存在的实例
      */
     private int saveOrRefreshInitializedInstance(MonitorTaskInstance snapshot, MonitorTaskInstance existing) {
         if (existing == null) {
@@ -466,6 +596,8 @@ public class MonitoringServiceImpl implements MonitoringService {
     /**
      * 统一处理是否展示默认值。
      * 任务表和实例表的 is_flag 默认都按 DDL 约定写入 "0"。
+     *
+     * @param isFlag 原始展示标识
      */
     private String defaultDisplayFlag(String isFlag) {
         return isFlag == null || isFlag.isBlank() ? "0" : isFlag;
@@ -474,6 +606,8 @@ public class MonitoringServiceImpl implements MonitoringService {
     /**
      * 计算任务允许延迟分钟数。
      * 真实项目中统一由字典表或其他配置中心按 taskCode 查询，当前预留实现未查到时默认按 0 分钟处理。
+     *
+     * @param taskDef 任务定义实体
      */
     private Integer resolveAllowDelayMinutes(MonitorTaskDef taskDef) {
         Integer configured = taskRuntimeConfigService.queryAllowDelayMinutesByTaskCode(taskDef.getTaskCode());
@@ -485,18 +619,22 @@ public class MonitoringServiceImpl implements MonitoringService {
 
     /**
      * 将任务定义中的时间模板折算到指定业务日期。
-     * 如果任务定义本身已经带了目标日期，则直接保留时分秒并覆盖到业务日期上。
+     * 任务表中的计划开始/结束时间只保存 HH:mm:ss，这里统一拼接到具体业务日期上。
+     *
+     * @param bizDate 业务日期
+     * @param template 任务定义中的时间模板
      */
-    private LocalDateTime resolvePlanDateTime(LocalDate bizDate, LocalDateTime template) {
-        if (bizDate == null || template == null) {
-            return template;
+    private LocalTime resolvePlanDateTime(LocalDate bizDate, LocalTime template) {
+        if (template == null) {
+            return null;
         }
-        LocalTime time = template.toLocalTime();
-        return LocalDateTime.of(bizDate, time);
+        return template;
     }
 
     /**
      * 格式化业务日期，统一使用 yyyyMMdd。
+     *
+     * @param bizDate 业务日期
      */
     private String formatBizDate(LocalDate bizDate) {
         return bizDate.format(DateTimeFormatter.BASIC_ISO_DATE);
@@ -504,6 +642,8 @@ public class MonitoringServiceImpl implements MonitoringService {
 
     /**
      * 将空批次号统一折算为 0，避免空值影响实例查询、日志记录和定时初始化逻辑。
+     *
+     * @param request 外部系统上报请求报文
      */
     private Integer normalizeRunNo(TaskReportRequest request) {
         return request.getRunNo() == null ? 0 : request.getRunNo();
@@ -511,8 +651,11 @@ public class MonitoringServiceImpl implements MonitoringService {
 
     /**
      * 统一归一化动作类型。
-     * 兼容旧版 begin/end，也支持新版 start/stop/restart/fail。
-     * 其中 stop 固定表示成功结束，fail 固定表示失败结束。
+     * 兼容旧版 begin/stop，也支持新版 start/end/restart/fail。
+     * 其中 end 固定表示成功结束，fail 固定表示失败结束。
+     *
+     * @param action 接口动作类型
+     * @param request 外部系统上报请求报文
      */
     private String normalizeAction(String action, TaskReportRequest request) {
         String raw = request.getStatus() == null || request.getStatus().isBlank() ? action : request.getStatus();
@@ -520,60 +663,88 @@ public class MonitoringServiceImpl implements MonitoringService {
             throw new BusinessException("任务动作不能为空");
         }
         String normalized = raw.trim().toLowerCase(Locale.ROOT);
-        return switch (normalized) {
-            case "begin" -> "start";
-            case "end" -> "stop";
-            case "start", "stop", "restart", "fail" -> normalized;
-            default -> normalized;
-        };
+        if ("begin".equals(normalized)) {
+            return "start";
+        }
+        if ("stop".equals(normalized)) {
+            return "end";
+        }
+        if ("end".equals(normalized)) {
+            return "end";
+        }
+        if ("start".equals(normalized)
+                || "end".equals(normalized)
+                || "restart".equals(normalized)
+                || "fail".equals(normalized)) {
+            return normalized;
+        }
+        return normalized;
     }
 
     /**
      * 解析本次调用的请求时间。
      * 业务方未显式传值时，回退到服务端接收时间。
+     *
+     * @param request 外部系统上报请求报文
      */
     private LocalDateTime resolveRequestTime(TaskReportRequest request) {
         return request.getRequestTime() != null ? request.getRequestTime() : LocalDateTime.now();
     }
 
     /**
-     * 生成新的重跑次数。
-     * 若当天已有历史实例，则在最大 run_times 基础上加一。
-     */
-    private Integer nextRunNo(TaskReportRequest request) {
-        Integer maxRunTimes = taskInstanceMapper.selectMaxRunTimes(
-                formatBizDate(request.getBizDate()), request.getTaskCode());
-        return maxRunTimes == null ? 1 : maxRunTimes + 1;
-    }
-
-    /**
      * 计算当前耗时。
      * 未开始返回 0，执行中返回开始到当前的分钟差，已结束返回开始到结束的分钟差。
+     *
+     * @param instance 任务实例
+     * @param current 当前时间
      */
-    private Integer resolveCurrentCostMinutes(MonitorTaskInstance instance, LocalDateTime current) {
+    private Integer resolveCurrentCostMinutes(MonitorTaskInstance instance, LocalTime current) {
         if (instance.getActualStartTime() == null) {
             return 0;
         }
-        LocalDateTime endTime = instance.getActualEndTime() == null ? null : instance.getActualEndTime();
+        LocalTime endTime = instance.getActualEndTime() == null ? null : instance.getActualEndTime();
         if (endTime == null) {
             return 0;
         }
-        long minutes = Duration.between(instance.getActualStartTime(), endTime).toMinutes();
+        long minutes = calculateMinutesBetween(instance.getActualStartTime(), endTime);
         return (int) Math.max(minutes, 0);
     }
 
     /**
-     * 解析实例频率。
-     * 由于实例表是一条任务 + 一条业务日期的数据，因此月底业务日期统一记为 M，平日统一记为 D。
+     * 将日期时间转换为纯时间。
+     *
+     * @param value 日期时间
      */
-    private String resolveInstanceFrequency(LocalDate bizDate) {
-        return isMonthEndView(bizDate) ? "M" : "D";
+    private LocalTime toLocalTime(LocalDateTime value) {
+        return value == null ? null : value.toLocalTime();
+    }
+
+    /**
+     * 计算两个时间之间的分钟差。
+     * 若结束时间早于开始时间，则按跨天到次日处理。
+     *
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     */
+    private long calculateMinutesBetween(LocalTime startTime, LocalTime endTime) {
+        if (startTime == null || endTime == null) {
+            return 0L;
+        }
+        long minutes = Duration.between(startTime, endTime).toMinutes();
+        if (minutes >= 0) {
+            return minutes;
+        }
+        return Duration.between(startTime, endTime.plusHours(24)).toMinutes();
     }
 
     /**
      * 计算历史平均耗时。
      * 平日统计往前 30 个非月底业务日成功实例平均耗时；
      * 月底统计往前 6 个自然月底业务日成功实例平均耗时。
+     *
+     * @param taskCode 任务编码
+     * @param bizDate 业务日期
+     * @param taskDef 任务定义实体
      */
     private Integer resolveHistoricalAvgCostMinutes(String taskCode, LocalDate bizDate, MonitorTaskDef taskDef) {
         LocalDate endDate = bizDate == null ? LocalDate.now() : bizDate;
@@ -592,6 +763,8 @@ public class MonitoringServiceImpl implements MonitoringService {
     /**
      * 判断是否为月底视图。
      * 业务日期为当月最后一天时，按往前 6 个自然月底统计历史平均耗时；否则按往前 30 个非月底业务日统计。
+     *
+     * @param bizDate 业务日期
      */
     private boolean isMonthEndView(LocalDate bizDate) {
         if (bizDate == null) {
@@ -603,6 +776,9 @@ public class MonitoringServiceImpl implements MonitoringService {
     /**
      * 构造平日场景历史平均耗时统计日期列表。
      * 从当前业务日期往前取 30 个非月底业务日，不包含当前业务日期本身。
+     *
+     * @param bizDate 当前业务日期
+     * @param size 需要回溯的业务日数量
      */
     private List<String> buildPreviousDailyBizDates(LocalDate bizDate, int size) {
         List<String> result = new java.util.ArrayList<>();
@@ -619,6 +795,9 @@ public class MonitoringServiceImpl implements MonitoringService {
     /**
      * 构造月底场景历史平均耗时统计日期列表。
      * 从当前业务日期往前取 6 个自然月底业务日，不包含当前业务日期本身。
+     *
+     * @param bizDate 当前业务日期
+     * @param size 需要回溯的月底数量
      */
     private List<String> buildPreviousMonthEndBizDates(LocalDate bizDate, int size) {
         List<String> result = new java.util.ArrayList<>();
@@ -633,6 +812,8 @@ public class MonitoringServiceImpl implements MonitoringService {
     /**
      * 序列化对象为 JSON 字符串。
      * 主要用于保留请求快照，便于后续排障。
+     *
+     * @param value 待序列化对象
      */
     private String writeJson(Object value) {
         if (value == null) {

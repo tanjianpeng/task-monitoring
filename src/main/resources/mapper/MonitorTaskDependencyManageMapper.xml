@@ -34,6 +34,18 @@
     </delete>
 
     <!--
+        按任务编码删除与该任务相关的全部依赖关系。
+        用途：任务删除时，需要同时清掉当前任务作为被依赖方和依赖方的全部关系，避免留下悬空依赖。
+        入参：
+        1. taskCode：任务编码。
+    -->
+    <delete id="deleteRelatedByTaskCode">
+        delete from monitor_task_dependency
+        where task_code = #{taskCode}
+           or pre_task_code = #{taskCode}
+    </delete>
+
+    <!--
         批量新增依赖关系。
         用途：任务保存时一次性写入多个前置任务关系。
         入参：

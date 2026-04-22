@@ -25,7 +25,8 @@ public interface MonitorDashboardMapper {
      * @param bizDate 业务日期，格式 yyyyMMdd，表示要统计哪一天的实例数据
      * @return 汇总统计结果，包含系统数、任务数、成功数、失败数等
      */
-    SummaryVO selectSummary(@Param("bizDate") String bizDate);
+    SummaryVO selectSummary(@Param("bizDate") String bizDate,
+                            @Param("monthEndView") boolean monthEndView);
 
     /**
      * 查询本地大屏系统信息卡片。
@@ -35,7 +36,8 @@ public interface MonitorDashboardMapper {
      * @return 系统卡片列表，包含成功、失败、待执行、执行中和总数
      */
     List<SystemDashboardCardVO> selectSystemCards(@Param("bizDate") String bizDate,
-                                                  @Param("systemName") String systemName);
+                                                  @Param("systemName") String systemName,
+                                                  @Param("monthEndView") boolean monthEndView);
 
     /**
      * 查询本地大屏任务卡片列表。
@@ -43,12 +45,13 @@ public interface MonitorDashboardMapper {
      * @param bizDate 业务日期，格式 yyyyMMdd，表示查询哪一天的任务实例
      * @return 任务卡片列表
      */
-    List<TaskCardVO> selectTaskCards(@Param("bizDate") String bizDate);
+    List<TaskCardVO> selectTaskCards(@Param("bizDate") String bizDate,
+                                     @Param("monthEndView") boolean monthEndView);
 
     /**
      * 查询任务依赖连线关系。
      *
      * @return 连线列表，前端据此绘制任务依赖箭头
      */
-    List<LinkVO> selectLinks();
+    List<LinkVO> selectLinks(@Param("monthEndView") boolean monthEndView);
 }

@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 
 import io.swagger.annotations.ApiModel;
@@ -28,11 +27,6 @@ public class MonitorTaskEvent {
     @Column(name = "id", unique = true, length = 64, nullable = false)
     @ApiModelProperty(name = "id", value = "主键ID")
     private String id;
-
-    /** 请求流水号。 */
-    @Column(name = "request_id", length = 64)
-    @ApiModelProperty(name = "requestId", value = "请求流水号")
-    private String requestId;
 
     /** 调用URL。 */
     @Column(name = "request_url", length = 200, nullable = false)
@@ -70,8 +64,7 @@ public class MonitorTaskEvent {
     private String resultStatus;
 
     /** 请求报文。 */
-    @Lob
-    @Column(name = "request_json")
+    @Column(name = "request_json", columnDefinition = "TEXT")
     @ApiModelProperty(name = "requestJson", value = "请求报文")
     private String requestJson;
 

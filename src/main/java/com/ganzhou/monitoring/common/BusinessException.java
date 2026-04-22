@@ -9,6 +9,11 @@ package com.ganzhou.monitoring.common;
  */
 public class BusinessException extends RuntimeException {
 
+    /**
+     * 构造业务异常。
+     *
+     * @param message 异常提示信息
+     */
     public BusinessException(String message) {
         super(message);
     }

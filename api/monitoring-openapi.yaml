@@ -13,8 +13,8 @@ paths:
       summary: 外部系统统一上报任务状态
       description: |
         外部业务系统统一调用该接口上报任务状态。
-        `status` 仅支持 `start`、`stop`、`restart`、`fail` 四种取值。
-        其中 `stop` 表示任务成功结束，`fail` 表示任务失败结束。
+        `status` 仅支持 `start`、`end`、`restart`、`fail` 四种取值。
+        其中 `end` 表示任务成功结束，`fail` 表示任务失败结束。
       requestBody:
         required: true
         content:
@@ -117,11 +117,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/ResultDtoVoid'
 
-  /manage/systems/{systemCode}:
+  /manage/systems/detail:
     get:
       summary: 查询系统详情
       parameters:
-        - in: path
+        - in: query
           name: systemCode
           required: true
           schema:
@@ -133,10 +133,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResultDtoMonitorSystem'
+  /manage/systems/update:
     put:
       summary: 修改系统
       parameters:
-        - in: path
+        - in: query
           name: systemCode
           required: true
           schema:
@@ -154,10 +155,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResultDtoVoid'
+
+  /manage/systems/delete:
     delete:
       summary: 删除系统
       parameters:
-        - in: path
+        - in: query
           name: systemCode
           required: true
           schema:
@@ -196,11 +199,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/ResultDtoVoid'
 
-  /manage/tasks/{taskCode}:
+  /manage/tasks/detail:
     get:
       summary: 查询任务详情及依赖关系
       parameters:
-        - in: path
+        - in: query
           name: taskCode
           required: true
           schema:
@@ -212,10 +215,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResultDtoTaskManageDetailVO'
+  /manage/tasks/update:
     put:
       summary: 修改任务及依赖关系
       parameters:
-        - in: path
+        - in: query
           name: taskCode
           required: true
           schema:
@@ -233,10 +237,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResultDtoVoid'
+
+  /manage/tasks/delete:
     delete:
       summary: 删除任务及其依赖关系
       parameters:
-        - in: path
+        - in: query
           name: taskCode
           required: true
           schema:
@@ -434,19 +440,18 @@ components:
           example: HISPROD_BAT_01
         bizDate:
           type: string
-          format: date
-          description: 业务日期，格式 yyyy-MM-dd
-          example: '2025-11-26'
+          description: 业务日期，格式 yyyyMMdd
+          example: '20251126'
         runNo:
           type: integer
           default: 0
           description: 重跑次数，默认值为 0
         status:
           type: string
-          enum: [start, stop, restart, fail]
+          enum: [start, end, restart, fail]
           description: |
             本次上报状态。
-            start 表示开始，stop 表示成功结束，restart 表示重跑开始，fail 表示失败结束。
+            start 表示开始，end 表示成功结束，restart 表示重跑开始，fail 表示失败结束。
         startTime:
           type: string
           format: date-time
@@ -495,10 +500,6 @@ components:
           type: string
         systemName:
           type: string
-        ownerName:
-          type: string
-        supervisorName:
-          type: string
         preRequisiteProd:
           type: string
         theBatchProd:
@@ -509,21 +510,25 @@ components:
           type: integer
         defaultCostMinutes:
           type: integer
-        frequency:
+        batchProcessing:
           type: string
+          description: 跑批周期，D:每日 M:月末 NM:非月末
         taskIsFlag:
           type: string
         remark:
           type: string
         planStartTime:
           type: string
-          format: date-time
+          format: time
+          description: 计划开始时间，格式 HH:mm:ss
         latestStartTime:
           type: string
-          format: date-time
+          format: time
+          description: 最晚开始时间，格式 HH:mm:ss
         planEndTime:
           type: string
-          format: date-time
+          format: time
+          description: 计划结束时间，格式 HH:mm:ss
         actualStartTime:
           type: string
           description: 实际开始时间，格式 HH:mm:ss
@@ -539,9 +544,10 @@ components:
         avgCostMinutes:
           type: string
           description: 历史平均耗时，格式 mm:ss；平日按往前 30 个非月底业务日统计，月底按往前 6 个自然月底业务日统计
-        predictEndTime:
+        latestEndTime:
           type: string
-          format: date-time
+          format: time
+          description: 最晚结束时间，格式 HH:mm:ss
           nullable: true
         delayedFlag:
           type: integer
@@ -630,20 +636,18 @@ components:
           type: string
         systemCode:
           type: string
-        ownerName:
-          type: string
-        supervisorName:
-          type: string
         preRequisiteProd:
           type: string
         theBatchProd:
           type: string
         planStartTime:
           type: string
-          format: date-time
+          format: time
+          description: 计划开始时间，格式 HH:mm:ss
         planEndTime:
           type: string
-          format: date-time
+          format: time
+          description: 计划结束时间，格式 HH:mm:ss
         defaultCostMinutes:
           type: integer
         posX:
@@ -690,20 +694,18 @@ components:
           type: string
         systemCode:
           type: string
-        ownerName:
-          type: string
-        supervisorName:
-          type: string
         preRequisiteProd:
           type: string
         theBatchProd:
           type: string
         planStartTime:
           type: string
-          format: date-time
+          format: time
+          description: 计划开始时间，格式 HH:mm:ss
         planEndTime:
           type: string
-          format: date-time
+          format: time
+          description: 计划结束时间，格式 HH:mm:ss
         defaultCostMinutes:
           type: integer
         posX:

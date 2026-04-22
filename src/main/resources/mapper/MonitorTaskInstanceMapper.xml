@@ -22,6 +22,19 @@
     </select>
 
     <!--
+        查询指定业务日期、任务编码下最新的一条任务实例。
+        用途：同一天同任务存在历史重复实例时，优先选择最后更新的一条作为当前实例。
+    -->
+    <select id="selectLatestByBizDateAndTaskCode" resultType="MonitorTaskInstance">
+        select *
+        from monitor_task_instance
+        where biz_date = #{bizDate}
+          and task_code = #{taskCode}
+        order by updated_time desc, id desc
+        limit 1
+    </select>
+
+    <!--
         新增任务实例。
         用途：每天 0 点预生成实例，或业务系统先上报时兜底补建实例。
         入参：
@@ -31,13 +44,13 @@
         insert into monitor_task_instance (
             id, biz_date, run_times, task_code, system_code,
             plan_start_time, latest_start_time, plan_end_time, actual_start_time,
-            actual_end_time, current_cost_minutes, avg_cost_minutes, frequency, predict_end_time,
+            actual_end_time, latest_end_time, current_cost_minutes, avg_cost_minutes,
             delayed_flag, timeout_flag, result_status, is_flag,
             created_time, updated_time
         ) values (
             #{id}, #{bizDate}, #{runTimes}, #{taskCode}, #{systemCode},
             #{planStartTime}, #{latestStartTime}, #{planEndTime}, #{actualStartTime},
-            #{actualEndTime}, #{currentCostMinutes}, #{avgCostMinutes}, #{frequency}, #{predictEndTime},
+            #{actualEndTime}, #{latestEndTime}, #{currentCostMinutes}, #{avgCostMinutes},
             #{delayedFlag}, #{timeoutFlag}, #{resultStatus}, #{isFlag},
             now(), now()
         )
@@ -45,19 +58,18 @@
 
     <!--
         按主键更新任务实例运行信息。
-        用途：业务系统每次 start/stop/restart/fail 上报后，刷新实例当前状态、时间和耗时。
+        用途：业务系统每次 start/end/restart/fail 上报后，刷新实例当前状态、时间和耗时。
         入参：
         1. id：实例主键，表示更新哪条记录。
-        2. 其余字段：实例最新状态和运行信息。
+        2. 其余字段：实例最新状态、跑批周期和运行信息。
     -->
     <update id="updateById" parameterType="MonitorTaskInstance">
         update monitor_task_instance
         set actual_start_time = #{actualStartTime},
             actual_end_time = #{actualEndTime},
+            latest_end_time = #{latestEndTime},
             current_cost_minutes = #{currentCostMinutes},
             avg_cost_minutes = #{avgCostMinutes},
-            frequency = #{frequency},
-            predict_end_time = #{predictEndTime},
             delayed_flag = #{delayedFlag},
             timeout_flag = #{timeoutFlag},
             result_status = #{resultStatus},
@@ -67,11 +79,23 @@
     </update>
 
     <!--
+        删除同一天同任务下除目标实例外的其他记录。
+        用途：保证同业务日期同任务最终只保留一条实例。
+    -->
+    <delete id="deleteByBizDateAndTaskCodeExcludeId">
+        delete
+        from monitor_task_instance
+        where biz_date = #{bizDate}
+          and task_code = #{taskCode}
+          and id <> #{excludeId}
+    </delete>
+
+    <!--
         按主键刷新实例计划信息。
         用途：每日定时初始化时，如果实例尚未开始执行，则同步任务定义上的计划时间和预计结束时间。
         入参：
         1. id：实例主键。
-        2. systemCode、planStartTime、latestStartTime、planEndTime、predictEndTime 等：最新计划值。
+        2. systemCode、planStartTime、latestStartTime、planEndTime、latestEndTime 等：最新计划值。
     -->
     <update id="updatePlanFieldsById" parameterType="MonitorTaskInstance">
         update monitor_task_instance
@@ -79,9 +103,8 @@
             plan_start_time = #{planStartTime},
             latest_start_time = #{latestStartTime},
             plan_end_time = #{planEndTime},
+            latest_end_time = #{latestEndTime},
             avg_cost_minutes = #{avgCostMinutes},
-            frequency = #{frequency},
-            predict_end_time = #{predictEndTime},
             delayed_flag = #{delayedFlag},
             timeout_flag = #{timeoutFlag},
             is_flag = #{isFlag},
@@ -117,7 +140,7 @@
     <!--
         按指定业务日期列表统计任务成功平均耗时。
         用途：平日视图统计近 30 个非月底业务日平均耗时，月底视图统计往前 6 个月底业务日平均耗时；
-        同时也用于 start/stop/fail 回调时计算预计结束时间。
+        同时也用于 start/end/fail 回调时计算预计结束时间。
         入参：
         1. taskCode：任务编码，表示统计哪个任务。
         2. bizDateList：参与统计的业务日期列表，格式 yyyyMMdd。

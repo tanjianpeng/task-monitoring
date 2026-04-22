@@ -14,13 +14,13 @@
         select task_code,
                task_name,
                system_code,
-               owner_name,
-               supervisor_name,
                pre_requisite_prod,
                the_batch_prod,
                plan_start_time,
                plan_end_time,
                default_cost_minutes,
+               batch_processing,
+               is_path,
                pos_x,
                pos_y,
                is_flag,
@@ -40,13 +40,13 @@
         select task_code,
                task_name,
                system_code,
-               owner_name,
-               supervisor_name,
                pre_requisite_prod,
                the_batch_prod,
                plan_start_time,
                plan_end_time,
                default_cost_minutes,
+               batch_processing,
+               is_path,
                pos_x,
                pos_y,
                is_flag,
@@ -54,6 +54,8 @@
                created_time,
                updated_time
         from monitor_task
+        where (#{monthEndView} = true and batch_processing = 'M')
+           or (#{monthEndView} = false and batch_processing in ('D', 'NM'))
         order by system_code asc, task_code asc
     </select>
 </mapper>

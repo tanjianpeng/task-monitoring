@@ -53,7 +53,7 @@
 1. 外部未回传开始时间时，为 `NOTSTART`。
 2. 收到 `start` 或 `restart` 后，若开始时间未超过最晚开始时间，为 `RUNNING`。
 3. 收到 `start` 或 `restart` 后，若开始时间超过最晚开始时间，为 `DELAYED`。
-4. 收到 `stop` 后，为 `SUCCESS`。
+4. 收到 `end` 后，为 `SUCCESS`。
 5. 收到 `fail` 后，为 `FAILED`。
 6. 已开始未结束且当前时间大于预计结束时间时，也归为 `DELAYED`。
 7. 已正常结束，但实际结束时间大于预计结束时间时，也记为延迟，状态仍保持 `SUCCESS` 或 `FAILED`，同时标记延迟。
@@ -97,12 +97,9 @@
 6. `plan_start_time` 计划开始时间
 7. `plan_end_time` 计划结束时间
 8. `default_cost_minutes` 默认耗时分钟数
-9. `avg_cost_minutes` 历史平均耗时分钟数
-10. 允许延迟分钟数不再落任务表，统一通过字典配置表按 `taskCode` 动态查询
-11. `frequency` 频率
-12. `is_flag` 是否大屏展示，0是，1否
-13. `pos_x`、`pos_y` 大屏坐标
-14. `remark` 备注
+9. `is_flag` 是否大屏展示，0是，1否
+10. `pos_x`、`pos_y` 大屏坐标
+11. `remark` 备注
 
 ### 5.3 `monitor_task_dependency` 任务依赖表
 
@@ -129,12 +126,14 @@
 7. `plan_end_time` 计划结束时间
 8. `actual_start_time` 实际开始时间
 9. `actual_end_time` 实际结束时间
-10. `current_cost_minutes` 当前耗时分钟数
-11. `predict_end_time` 预计结束时间
-12. `delayed_flag` 是否延迟
-13. `timeout_flag` 是否超时
-14. `result_status` 执行结果状态
-15. `is_flag` 是否隐藏，1否，0是
+10. `latest_end_time` 最晚结束时间
+11. `current_cost_minutes` 当前耗时分钟数
+12. `avg_cost_minutes` 历史平均耗时分钟数
+13. `batch_processing` 跑批周期，`D` 表示每日跑批，`M` 表示月末跑批，`NM` 表示非月末跑批
+14. `delayed_flag` 是否延迟
+15. `timeout_flag` 是否超时
+16. `result_status` 执行结果状态
+17. `is_flag` 是否隐藏，1否，0是
 
 ### 5.5 `monitor_task_log` 任务调用日志表
 
@@ -144,7 +143,7 @@
 
 1. `request_id` 请求流水号
 2. `request_url` 调用地址
-3. `request_status` 请求动作状态，取值 `start`、`stop`、`restart`、`fail`
+3. `request_status` 请求动作状态，取值 `start`、`end`、`restart`、`fail`
 4. `system_code` 系统编码
 5. `task_code` 任务编码
 6. `biz_date` 业务日期
@@ -178,7 +177,7 @@
 `status` 字段说明如下：
 
 1. `start` 表示开始
-2. `stop` 表示成功结束
+2. `end` 表示成功结束
 3. `restart` 表示重跑开始
 4. `fail` 表示失败结束
 
@@ -212,15 +211,15 @@
 ### 7.3 管理接口
 
 1. `GET /api/manage/systems`
-2. `GET /api/manage/systems/{systemCode}`
+2. `GET /api/manage/systems/detail?systemCode=...`
 3. `POST /api/manage/systems`
-4. `PUT /api/manage/systems/{systemCode}`
-5. `DELETE /api/manage/systems/{systemCode}`
+4. `PUT /api/manage/systems/update?systemCode=...`
+5. `DELETE /api/manage/systems/delete?systemCode=...`
 6. `GET /api/manage/tasks`
-7. `GET /api/manage/tasks/{taskCode}`
+7. `GET /api/manage/tasks/detail?taskCode=...`
 8. `POST /api/manage/tasks`
-9. `PUT /api/manage/tasks/{taskCode}`
-10. `DELETE /api/manage/tasks/{taskCode}`
+9. `PUT /api/manage/tasks/update?taskCode=...`
+10. `DELETE /api/manage/tasks/delete?taskCode=...`
 
 ## 8. 推荐处理流程
 
@@ -265,7 +264,7 @@
 
 1. 谁调用上报接口，就更新谁对应的任务实例。
 2. 未调用前保持 `NOTSTART`。
-3. `stop` 直接视为成功。
+3. `end` 直接视为成功。
 4. `fail` 直接视为失败。
 5. `restart` 会累计重跑次数，并按开始时间与最晚开始时间比较后进入 `RUNNING` 或 `DELAYED`。
 

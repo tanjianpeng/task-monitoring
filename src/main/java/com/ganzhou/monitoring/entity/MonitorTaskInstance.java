@@ -1,11 +1,11 @@
 package com.ganzhou.monitoring.entity;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import jakarta.persistence.Transient;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -49,30 +49,30 @@ public class MonitorTaskInstance {
     @ApiModelProperty(name = "systemCode", value = "系统编码")
     private String systemCode;
 
-    /** 计划开始时间。 */
+    /** 计划开始时间，格式 HH:mm:ss。 */
     @Column(name = "plan_start_time", nullable = false)
-    @ApiModelProperty(name = "planStartTime", value = "计划开始时间")
-    private LocalDateTime planStartTime;
+    @ApiModelProperty(name = "planStartTime", value = "计划开始时间，格式 HH:mm:ss")
+    private LocalTime planStartTime;
 
-    /** 最晚开始时间。 */
+    /** 最晚开始时间，格式 HH:mm:ss。 */
     @Column(name = "latest_start_time")
-    @ApiModelProperty(name = "latestStartTime", value = "最晚开始时间")
-    private LocalDateTime latestStartTime;
+    @ApiModelProperty(name = "latestStartTime", value = "最晚开始时间，格式 HH:mm:ss")
+    private LocalTime latestStartTime;
 
-    /** 计划结束时间。 */
+    /** 计划结束时间，格式 HH:mm:ss。 */
     @Column(name = "plan_end_time")
-    @ApiModelProperty(name = "planEndTime", value = "计划结束时间")
-    private LocalDateTime planEndTime;
+    @ApiModelProperty(name = "planEndTime", value = "计划结束时间，格式 HH:mm:ss")
+    private LocalTime planEndTime;
 
-    /** 实际开始时间。 */
+    /** 实际开始时间，格式 HH:mm:ss。 */
     @Column(name = "actual_start_time")
-    @ApiModelProperty(name = "actualStartTime", value = "实际开始时间")
-    private LocalDateTime actualStartTime;
+    @ApiModelProperty(name = "actualStartTime", value = "实际开始时间，格式 HH:mm:ss")
+    private LocalTime actualStartTime;
 
-    /** 实际结束时间。 */
+    /** 实际结束时间，格式 HH:mm:ss。 */
     @Column(name = "actual_end_time")
-    @ApiModelProperty(name = "actualEndTime", value = "实际结束时间")
-    private LocalDateTime actualEndTime;
+    @ApiModelProperty(name = "actualEndTime", value = "实际结束时间，格式 HH:mm:ss")
+    private LocalTime actualEndTime;
 
     /** 当前耗时，单位分钟。 */
     @Column(name = "current_cost_minutes")
@@ -84,15 +84,10 @@ public class MonitorTaskInstance {
     @ApiModelProperty(name = "avgCostMinutes", value = "历史平均耗时(分钟)")
     private Integer avgCostMinutes;
 
-    /** 频率。 */
-    @Column(name = "frequency", length = 1)
-    @ApiModelProperty(name = "frequency", value = "频率，平日D，月底M")
-    private String frequency;
-
-    /** 预计结束时间。 */
-    @Column(name = "predict_end_time")
-    @ApiModelProperty(name = "predictEndTime", value = "预计结束时间")
-    private LocalDateTime predictEndTime;
+    /** 最晚结束时间，格式 HH:mm:ss。 */
+    @Column(name = "latest_end_time")
+    @ApiModelProperty(name = "latestEndTime", value = "最晚结束时间，格式 HH:mm:ss")
+    private LocalTime latestEndTime;
 
     /** 是否延迟。 */
     @Column(name = "delayed_flag", nullable = false)
@@ -113,11 +108,6 @@ public class MonitorTaskInstance {
     @Column(name = "is_flag", length = 1, nullable = false)
     @ApiModelProperty(name = "isFlag", value = "是否展示，1否，0是")
     private String isFlag;
-
-    /** 当前状态，仅查询时计算。 */
-    @Transient
-    @ApiModelProperty(name = "currentStatus", value = "当前状态")
-    private String currentStatus;
 
     /** 创建时间。 */
     @Column(name = "created_time")

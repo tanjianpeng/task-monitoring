@@ -19,12 +19,6 @@ import java.time.LocalDateTime;
 public class TaskReportRequest {
 
     /**
-     * 请求流水号。
-     * 用于记录外部系统本次调用的请求标识，便于日志追踪。
-     */
-    private String requestId;
-
-    /**
      * 上报系统编码。
      */
     @NotBlank
@@ -41,7 +35,7 @@ public class TaskReportRequest {
      * 一般指当前跑批归属的业务日，而不是接口调用日期。
      */
     @NotNull
-    @JsonFormat(pattern = "yyyy-MM-dd")
+    @JsonFormat(pattern = "yyyyMMdd")
     private LocalDate bizDate;
 
     /**
@@ -52,7 +46,7 @@ public class TaskReportRequest {
 
     /**
      * 本次上报状态。
-     * 支持 start、stop、restart、fail 四种取值。
+     * 支持 start、end、restart、fail 四种取值。
      */
     private String status;
 

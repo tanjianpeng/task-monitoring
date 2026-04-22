@@ -15,22 +15,39 @@
     <select id="selectSummary" resultType="com.ganzhou.monitoring.dto.SummaryVO">
         select count(distinct t.system_code) as system_count,
                count(1) as task_count,
-               sum(case when x.result_status = 'NOTSTART' then 1 else 0 end) as not_start_count,
-               sum(case when x.result_status = 'RUNNING' then 1 else 0 end) as running_count,
-               sum(case when x.result_status = 'SUCCESS' then 1 else 0 end) as success_count,
-               sum(case when x.result_status = 'FAILED' then 1 else 0 end) as failed_count
-        from (
-                 select i.task_code,
-                        case
-                            when i.actual_end_time is not null and i.result_status = 'SUCCESS' then 'SUCCESS'
-                            when i.actual_end_time is not null and i.result_status = 'FAILED' then 'FAILED'
-                            when i.actual_start_time is not null and i.actual_end_time is null then 'RUNNING'
-                            else 'NOTSTART'
-                            end as result_status
-                 from monitor_task_instance i
-                 where i.biz_date = #{bizDate}
-             ) x
-                 left join monitor_task t on x.task_code = t.task_code
+               sum(case
+                       when i.task_code is null then 1
+                       when i.actual_end_time is null and i.actual_start_time is null then 1
+                       else 0
+                   end) as not_start_count,
+               sum(case
+                       when i.actual_start_time is not null and i.actual_end_time is null then 1
+                       else 0
+                   end) as running_count,
+               sum(case
+                       when i.actual_end_time is not null and i.result_status = 'SUCCESS' then 1
+                       else 0
+                   end) as success_count,
+               sum(case
+                       when i.actual_end_time is not null and i.result_status = 'FAILED' then 1
+                       else 0
+                   end) as failed_count
+        from monitor_task t
+                 left join monitor_task_instance i
+                           on i.task_code = t.task_code
+                               and i.biz_date = #{bizDate}
+                               and i.run_times = (
+                                   select max(i2.run_times)
+                                   from monitor_task_instance i2
+                                   where i2.biz_date = #{bizDate}
+                                     and i2.task_code = t.task_code
+                               )
+        where t.is_path = '0'
+          and (
+              (#{monthEndView} = true and t.batch_processing = 'M')
+              or
+              (#{monthEndView} = false and t.batch_processing in ('D', 'NM'))
+          )
     </select>
 
     <!--
@@ -46,25 +63,44 @@
                s.system_name,
                s.owner_name,
                s.supervisor_name,
-               sum(case when x.result_status = 'NOTSTART' then 1 else 0 end) as not_start_count,
-               sum(case when x.result_status = 'RUNNING' then 1 else 0 end) as running_count,
-               sum(case when x.result_status = 'SUCCESS' then 1 else 0 end) as success_count,
-               sum(case when x.result_status = 'FAILED' then 1 else 0 end) as failed_count,
-               count(x.task_code) as total_count
+               sum(case
+                       when i.task_code is null then 1
+                       when i.actual_end_time is null and i.actual_start_time is null then 1
+                       else 0
+                   end) as not_start_count,
+               sum(case
+                       when i.actual_start_time is not null and i.actual_end_time is null then 1
+                       else 0
+                   end) as running_count,
+               sum(case
+                       when i.actual_end_time is not null and i.result_status = 'SUCCESS' then 1
+                       else 0
+                   end) as success_count,
+               sum(case
+                       when i.actual_end_time is not null and i.result_status = 'FAILED' then 1
+                       else 0
+                   end) as failed_count,
+               count(t.task_code) as total_count
         from monitor_system s
-                 left join (
-            select i.system_code,
-                   i.task_code,
-                   case
-                       when i.actual_end_time is not null and i.result_status = 'SUCCESS' then 'SUCCESS'
-                       when i.actual_end_time is not null and i.result_status = 'FAILED' then 'FAILED'
-                       when i.actual_start_time is not null and i.actual_end_time is null then 'RUNNING'
-                       else 'NOTSTART'
-                       end as result_status
-            from monitor_task_instance i
-            where i.biz_date = #{bizDate}
-        ) x on s.system_code = x.system_code
+                 left join monitor_task t
+                           on t.system_code = s.system_code
+                               and t.is_path = '0'
+                               and (
+                                   (#{monthEndView} = true and t.batch_processing = 'M')
+                                   or
+                                   (#{monthEndView} = false and t.batch_processing in ('D', 'NM'))
+                               )
+                 left join monitor_task_instance i
+                           on i.task_code = t.task_code
+                               and i.biz_date = #{bizDate}
+                               and i.run_times = (
+                                   select max(i2.run_times)
+                                   from monitor_task_instance i2
+                                   where i2.biz_date = #{bizDate}
+                                     and i2.task_code = t.task_code
+                               )
         where s.is_flag = '0'
+          and t.task_code is not null
         <if test="systemName != null and systemName != ''">
             and s.system_name like concat('%', #{systemName}, '%')
         </if>
@@ -89,26 +125,26 @@
         1. bizDate：业务日期，格式 yyyyMMdd，表示查询哪一天的任务实例。
     -->
     <select id="selectTaskCards" resultType="com.ganzhou.monitoring.dto.TaskCardVO">
-        select i.biz_date,
-               i.run_times,
-               i.task_code,
+        select coalesce(i.biz_date, #{bizDate}) as biz_date,
+               coalesce(i.run_times, 0) as run_times,
+               t.task_code,
                t.task_name,
-               i.system_code,
+               t.system_code,
                s.system_name,
-               t.owner_name,
-               t.supervisor_name,
                t.pre_requisite_prod,
                t.the_batch_prod,
                t.pos_x,
                t.pos_y,
                t.default_cost_minutes,
-               i.frequency,
+               t.batch_processing,
+               t.is_path,
                t.is_flag as task_is_flag,
                t.remark,
                case
+                   when i.task_code is null then 'NOTSTART'
                    when i.actual_end_time is not null and i.result_status = 'SUCCESS' then 'SUCCESS'
                    when i.actual_end_time is not null and i.result_status = 'FAILED' then 'FAILED'
-                   when i.actual_start_time is not null and i.actual_end_time is null and now() > i.predict_end_time then 'DELAYED'
+                   when i.actual_start_time is not null and i.actual_end_time is null and current_time() > i.latest_end_time then 'DELAYED'
                    when i.actual_start_time is not null and i.latest_start_time is not null and i.actual_start_time > i.latest_start_time then 'DELAYED'
                    when i.actual_start_time is not null and i.actual_end_time is null then 'RUNNING'
                    else 'NOTSTART'
@@ -120,25 +156,38 @@
                i.actual_end_time,
                i.current_cost_minutes * 60 as current_cost_seconds,
                i.avg_cost_minutes * 60 as avg_cost_seconds,
-               i.predict_end_time,
+               i.latest_end_time,
                case
                    when i.actual_start_time is not null and i.latest_start_time is not null and i.actual_start_time > i.latest_start_time then 1
-                   when i.actual_start_time is not null and i.actual_end_time is null and now() > i.predict_end_time then 1
-                   when i.actual_end_time is not null and i.predict_end_time is not null and i.actual_end_time > i.predict_end_time then 1
+                   when i.actual_start_time is not null and i.actual_end_time is null and current_time() > i.latest_end_time then 1
+                   when i.actual_end_time is not null and i.latest_end_time is not null and i.actual_end_time > i.latest_end_time then 1
                    when i.delayed_flag = 1 then 1
                    else 0
                    end as delayed_flag,
                case
-                   when i.actual_start_time is not null and i.actual_end_time is null and now() > i.predict_end_time then 1
-                   when i.actual_end_time is not null and i.predict_end_time is not null and i.actual_end_time > i.predict_end_time then 1
+                   when i.actual_start_time is not null and i.actual_end_time is null and current_time() > i.latest_end_time then 1
+                   when i.actual_end_time is not null and i.latest_end_time is not null and i.actual_end_time > i.latest_end_time then 1
                    when i.timeout_flag = 1 then 1
                    else 0
                    end as timeout_flag,
-               i.is_flag
-        from monitor_task_instance i
-                 left join monitor_system s on i.system_code = s.system_code
-                 left join monitor_task t on i.task_code = t.task_code
-        where i.biz_date = #{bizDate}
+               coalesce(i.is_flag, '0') as is_flag
+        from monitor_task t
+                 left join monitor_system s on t.system_code = s.system_code
+                 left join monitor_task_instance i
+                           on i.task_code = t.task_code
+                               and i.biz_date = #{bizDate}
+                               and i.run_times = (
+                                   select max(i2.run_times)
+                                   from monitor_task_instance i2
+                                   where i2.biz_date = #{bizDate}
+                                     and i2.task_code = t.task_code
+                               )
+        where t.is_path = '0'
+          and (
+              (#{monthEndView} = true and t.batch_processing = 'M')
+              or
+              (#{monthEndView} = false and t.batch_processing in ('D', 'NM'))
+          )
         order by i.plan_start_time asc, i.task_code asc
     </select>
 
@@ -151,6 +200,28 @@
                task_code,
                direction
         from monitor_task_dependency d
+        where exists (
+            select 1
+            from monitor_task pre
+            where pre.task_code = d.pre_task_code
+              and pre.is_path = '0'
+              and (
+                  (#{monthEndView} = true and pre.batch_processing = 'M')
+                  or
+                  (#{monthEndView} = false and pre.batch_processing in ('D', 'NM'))
+              )
+        )
+          and exists (
+            select 1
+            from monitor_task cur
+            where cur.task_code = d.task_code
+              and cur.is_path = '0'
+              and (
+                  (#{monthEndView} = true and cur.batch_processing = 'M')
+                  or
+                  (#{monthEndView} = false and cur.batch_processing in ('D', 'NM'))
+              )
+        )
         order by pre_task_code asc, task_code asc
     </select>
 </mapper>

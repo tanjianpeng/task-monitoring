@@ -16,7 +16,7 @@ public interface MonitoringService {
     /**
      * 处理外部系统统一任务动作上报。
      *
-     * @param action 动作类型，支持 start/stop/restart/fail
+     * @param action 动作类型，支持 start/end/restart/fail
      * @param request 上报请求
      * @return 当前运行批次
      */
