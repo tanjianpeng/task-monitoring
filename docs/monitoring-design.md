@@ -211,15 +211,15 @@
 ### 7.3 管理接口
 
 1. `GET /api/manage/systems`
-2. `GET /api/manage/systems/{systemCode}`
+2. `GET /api/manage/systems/detail?systemCode=...`
 3. `POST /api/manage/systems`
-4. `PUT /api/manage/systems/{systemCode}`
-5. `DELETE /api/manage/systems/{systemCode}`
+4. `PUT /api/manage/systems/update?systemCode=...`
+5. `DELETE /api/manage/systems/delete?systemCode=...`
 6. `GET /api/manage/tasks`
-7. `GET /api/manage/tasks/{taskCode}`
+7. `GET /api/manage/tasks/detail?taskCode=...`
 8. `POST /api/manage/tasks`
-9. `PUT /api/manage/tasks/{taskCode}`
-10. `DELETE /api/manage/tasks/{taskCode}`
+9. `PUT /api/manage/tasks/update?taskCode=...`
+10. `DELETE /api/manage/tasks/delete?taskCode=...`
 
 ## 8. 推荐处理流程
 

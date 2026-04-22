@@ -8,7 +8,7 @@
 
 ### 2. 查询系统详情
 
-- `GET /api/manage/systems/{systemCode}`
+- `GET /api/manage/systems/detail?systemCode=...`
 
 ### 3. 新增系统
 
@@ -16,11 +16,11 @@
 
 ### 4. 修改系统
 
-- `PUT /api/manage/systems/{systemCode}`
+- `PUT /api/manage/systems/update?systemCode=...`
 
 ### 5. 删除系统
 
-- `DELETE /api/manage/systems/{systemCode}`
+- `DELETE /api/manage/systems/delete?systemCode=...`
 
 说明：
 
@@ -35,7 +35,7 @@
 
 ### 2. 查询任务详情
 
-- `GET /api/manage/tasks/{taskCode}`
+- `GET /api/manage/tasks/detail?taskCode=...`
 
 说明：
 
@@ -48,11 +48,11 @@
 
 ### 4. 修改任务
 
-- `PUT /api/manage/tasks/{taskCode}`
+- `PUT /api/manage/tasks/update?taskCode=...`
 
 ### 5. 删除任务
 
-- `DELETE /api/manage/tasks/{taskCode}`
+- `DELETE /api/manage/tasks/delete?taskCode=...`
 
 说明：
 

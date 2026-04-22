@@ -108,8 +108,8 @@ public class BatchMonitoringController {
      *
      * @param systemCode 系统编码
      */
-    @GetMapping("/manage/systems/{systemCode}")
-    public ResultDto<MonitorSystem> systemDetail(@PathVariable String systemCode) {
+    @GetMapping("/manage/systems/detail")
+    public ResultDto<MonitorSystem> systemDetail(@RequestParam String systemCode) {
         return ResultDto.success(systemManageService.getSystem(systemCode));
     }
 
@@ -130,8 +130,8 @@ public class BatchMonitoringController {
      * @param systemCode 系统编码
      * @param request 系统修改请求参数
      */
-    @PutMapping("/manage/systems/{systemCode}")
-    public ResultDto<Void> updateSystem(@PathVariable String systemCode,
+    @PutMapping("/manage/systems/update")
+    public ResultDto<Void> updateSystem(@RequestParam String systemCode,
                                         @Valid @RequestBody SystemSaveRequest request) {
         request.setSystemCode(systemCode);
         systemManageService.updateSystem(request);
@@ -143,8 +143,8 @@ public class BatchMonitoringController {
      *
      * @param systemCode 系统编码
      */
-    @DeleteMapping("/manage/systems/{systemCode}")
-    public ResultDto<Void> deleteSystem(@PathVariable String systemCode) {
+    @DeleteMapping("/manage/systems/delete")
+    public ResultDto<Void> deleteSystem(@RequestParam String systemCode) {
         systemManageService.deleteSystem(systemCode);
         return ResultDto.successMessage("系统删除成功");
     }
@@ -162,8 +162,8 @@ public class BatchMonitoringController {
      *
      * @param taskCode 任务编码
      */
-    @GetMapping("/manage/tasks/{taskCode}")
-    public ResultDto<TaskManageDetailVO> taskManageDetail(@PathVariable String taskCode) {
+    @GetMapping("/manage/tasks/detail")
+    public ResultDto<TaskManageDetailVO> taskManageDetail(@RequestParam String taskCode) {
         return ResultDto.success(taskManageService.getTaskDetail(taskCode));
     }
 
@@ -184,8 +184,8 @@ public class BatchMonitoringController {
      * @param taskCode 任务编码
      * @param request 任务修改请求参数
      */
-    @PutMapping("/manage/tasks/{taskCode}")
-    public ResultDto<Void> updateTask(@PathVariable String taskCode,
+    @PutMapping("/manage/tasks/update")
+    public ResultDto<Void> updateTask(@RequestParam String taskCode,
                                       @Valid @RequestBody TaskSaveRequest request) {
         request.setTaskCode(taskCode);
         taskManageService.updateTask(request);
@@ -197,8 +197,8 @@ public class BatchMonitoringController {
      *
      * @param taskCode 任务编码
      */
-    @DeleteMapping("/manage/tasks/{taskCode}")
-    public ResultDto<Void> deleteTask(@PathVariable String taskCode) {
+    @DeleteMapping("/manage/tasks/delete")
+    public ResultDto<Void> deleteTask(@RequestParam String taskCode) {
         taskManageService.deleteTask(taskCode);
         return ResultDto.successMessage("任务删除成功");
     }
